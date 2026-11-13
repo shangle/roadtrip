@@ -521,6 +521,10 @@ body {
   z-index: 1;
 }
 
+#map .leaflet-tile-pane {
+  filter: invert(94%) hue-rotate(180deg) brightness(90%) contrast(92%) saturate(75%);
+}
+
 /* Split Iframe */
 .ts-iframe {
   width: 100%;

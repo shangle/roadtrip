@@ -590,9 +590,9 @@
   function initMap() {
     if (map) return;
     map = L.map('map', { zoomControl: false }).setView([43.156, -85.710], 7);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      attribution: 'Tiles &copy; Esri',
     }).addTo(map);
     stopMarkersLayer = L.layerGroup().addTo(map);
     routeLayer = L.polyline([], { color: '#9D7BFF', weight: 4, opacity: 0.85 }).addTo(map);
