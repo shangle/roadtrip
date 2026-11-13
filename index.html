@@ -90,7 +90,7 @@
           </div>
           <div>
             <div class="wf-title">Car DJ &amp; Notes</div>
-            <div class="wf-desc">Queue songs on YouTube Music and send quick car notes.</div>
+            <div class="wf-desc">Open our shared YouTube Music playlist to add songs &amp; drop car notes.</div>
           </div>
         </div>
       </div>
@@ -185,7 +185,7 @@
           </div>
           <div class="qa-label">Add<br>Cost</div>
         </button>
-        <button class="qa-btn" id="qa-song-btn" type="button">
+        <a class="qa-btn" id="qa-song-btn" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
           <div class="qa-circle" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 17.5V6l9-1.8V15.5"/>
@@ -194,7 +194,7 @@
             </svg>
           </div>
           <div class="qa-label">Add<br>Song</div>
-        </button>
+        </a>
         <button class="qa-btn" id="qa-msg-btn" type="button">
           <div class="qa-circle" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -246,7 +246,7 @@
           <button class="link-btn" id="home-goto-vibe" type="button">Music &amp; Chat →</button>
         </div>
 
-        <a class="track-row" style="text-decoration:none; color:inherit; margin-bottom:10px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc" target="_blank" rel="noopener">
+        <a id="home-music-link" class="track-row" style="text-decoration:none; color:inherit; margin-bottom:10px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
           <div class="music-app-badge" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 18V5l11-2v13"/>
@@ -256,9 +256,9 @@
           </div>
           <div class="track-info">
             <div class="track-title" id="home-music-title">Dangerous.Business Playlist</div>
-            <div class="track-meta" id="home-music-sub">Tap to open in YouTube Music</div>
+            <div class="track-meta" id="home-music-sub">Tap to add or edit in YouTube Music</div>
           </div>
-          <span class="btn btn-sm btn-lime">Open ↗</span>
+          <span class="btn btn-sm btn-lime">Edit ↗</span>
         </a>
 
         <div id="home-latest-msgs"></div>
@@ -311,10 +311,7 @@
       <section class="card">
         <div class="card-head">
           <div class="card-title">Roadtrip Music</div>
-          <div style="display:flex; gap:6px;">
-            <a class="btn btn-sm btn-lime" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc" target="_blank" rel="noopener">YouTube Music ↗</a>
-            <a class="btn btn-sm btn-purple" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">+ Collaborate</a>
-          </div>
+          <button id="refresh-playlist-btn" class="subtle-pill-btn" type="button">↻ Sync List</button>
         </div>
 
         <div class="player-wrap">
@@ -322,21 +319,18 @@
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px;">
           <span class="muted" id="now-playing-label">Playing Dangerous.Business playlist</span>
-          <button id="play-playlist-btn" class="subtle-pill-btn" type="button">Back to Playlist</button>
+          <button id="play-playlist-btn" class="subtle-pill-btn" type="button">Full Playlist</button>
         </div>
 
-        <div style="margin-top:14px;">
-          <div class="input-row">
-            <input id="music-search-input" class="input" type="text" placeholder="Search a song to queue...">
-            <button id="music-search-btn" class="btn btn-lime" type="button">Find</button>
-          </div>
-          <div id="music-search-results" class="search-results hidden"></div>
+        <a id="vibe-edit-playlist-link" class="btn btn-lime btn-full" style="margin-top:14px; font-size:1rem; padding:14px 16px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
+          + Add or Edit Songs in YouTube Music ↗
+        </a>
+        <div class="muted" style="text-align:center; margin-top:8px;">
+          Opens the shared playlist directly in YouTube Music so anyone can add, remove, or reorder songs — then tap <strong>Sync List</strong> above.
         </div>
 
-        <div id="music-queue-list" style="margin-top:14px;"></div>
-
-        <details style="margin-top:12px;">
-          <summary class="muted" style="cursor:pointer; font-weight:700;">View Full Playlist Tracks</summary>
+        <details open style="margin-top:14px;">
+          <summary id="playlist-count-label" class="muted" style="cursor:pointer; font-weight:800; color:#E2E8F0;">Playlist Tracks</summary>
           <div id="playlist-tracks-list" style="margin-top:10px;"></div>
         </details>
       </section>
@@ -527,23 +521,6 @@
         <button id="sheet-dest-btn" class="btn btn-lime" type="button">Search</button>
       </div>
       <div id="sheet-dest-results" class="search-results hidden"></div>
-    </div>
-  </div>
-
-  <!-- BOTTOM SHEET: Quick Add Song -->
-  <div id="sheet-song" class="sheet-backdrop hidden">
-    <div class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="card-head">
-        <div class="card-title">Request a Song</div>
-        <button class="subtle-pill-btn close-sheet-btn" type="button">Close</button>
-      </div>
-      <div class="input-row" style="margin-bottom:8px;">
-        <input id="sheet-song-input" class="input" type="text" placeholder="Song name or artist...">
-        <button id="sheet-song-btn" class="btn btn-lime" type="button">Find</button>
-      </div>
-      <input id="sheet-song-note" class="input" type="text" placeholder="Optional note (e.g. Turn it up!)">
-      <div id="sheet-song-results" class="search-results hidden"></div>
     </div>
   </div>
 

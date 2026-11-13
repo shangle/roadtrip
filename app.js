@@ -3,6 +3,7 @@
 
   const DISCOVERY_GIST_ID = '2d2eaaf5efd625d4d670877c48922751';
   const PLAYLIST_ID = 'PLO6qnlYSFTDc';
+  const COLLAB_PLAYLIST_URL = 'https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw';
   const DEFAULT_CREW = ['Tim', 'Chris', 'Jessica', 'Nancy'];
   const DONUT_COLORS = ['#C8FF3D', '#9D7BFF', '#38BDF8', '#FB7185', '#FBBF24'];
   const LOCAL_STORAGE_KEY = 'roadtrip_hub_offline_state_v2';
@@ -704,15 +705,17 @@
   }
 
   function renderHomeVibe() {
-    const queue = (appState.music?.queue || []).filter((q) => !q.played);
-    if (queue.length > 0) {
-      document.getElementById('home-music-title').textContent = `Up Next: ${queue[0].title}`;
-      document.getElementById('home-music-sub').textContent = `Requested by ${queue[0].addedBy} • ${queue.length} in queue`;
-    } else {
-      const count = appState.music?.playlistTracks?.length || 0;
-      document.getElementById('home-music-title').textContent = appState.music?.playlistTitle || 'Dangerous.Business Playlist';
-      document.getElementById('home-music-sub').textContent = count ? `${count} songs on YouTube Music • Tap to open` : 'Tap to open in YouTube Music';
-    }
+    const collabHref = appState.music?.collabUrl || COLLAB_PLAYLIST_URL;
+    ['qa-song-btn', 'home-music-link', 'vibe-edit-playlist-link'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.href = collabHref;
+    });
+
+    const count = appState.music?.playlistTracks?.length || 0;
+    document.getElementById('home-music-title').textContent = appState.music?.playlistTitle || 'Dangerous.Business Playlist';
+    document.getElementById('home-music-sub').textContent = count
+      ? `${count} songs • Tap to add or edit in YouTube Music`
+      : 'Tap to add or edit in YouTube Music';
 
     const box = document.getElementById('home-latest-msgs');
     const recent = (appState.messages || []).slice(-2);
@@ -888,7 +891,7 @@
     }
   });
 
-  // --- YouTube Music & Queue ---
+  // --- YouTube Music Direct Playlist ---
   window.onYouTubeIframeAPIReady = function () {
     ytPlayer = new YT.Player('yt-player-mount', {
       playerVars: { listType: 'playlist', list: PLAYLIST_ID, rel: 0 },
@@ -896,9 +899,6 @@
         onReady: () => {
           ytReady = true;
           if (appState.music?.nowPlayingVideoId) playVideoInEmbed(appState.music.nowPlayingVideoId);
-        },
-        onStateChange: (ev) => {
-          if (ev.data === YT.PlayerState.ENDED) playNextQueuedSong();
         },
       },
     });
@@ -908,7 +908,7 @@
     if (!ytReady || !ytPlayer || activeLoadedVideoId === videoId) return;
     activeLoadedVideoId = videoId;
     ytPlayer.loadVideoById(videoId);
-    document.getElementById('now-playing-label').textContent = labelText || 'Playing requested song';
+    document.getElementById('now-playing-label').textContent = labelText || 'Playing track';
   }
 
   function playOfficialPlaylist() {
@@ -917,115 +917,37 @@
     document.getElementById('now-playing-label').textContent = `Playing ${appState.music?.playlistTitle || 'Dangerous.Business'} playlist`;
   }
 
-  async function playNextQueuedSong() {
-    const next = (appState.music?.queue || []).find((q) => !q.played);
-    if (!next) return;
-    await musicQueueAction({ action: 'play', queueId: next.id, videoId: next.videoId });
-    playVideoInEmbed(next.videoId, `Playing: ${next.title}`);
-  }
-
-  async function musicQueueAction(payload) {
-    if (apiBase) {
-      try {
-        appState.music = await apiFetch('/api/music/queue', { method: 'POST', body: JSON.stringify(payload) });
-        saveLocalState();
-        renderMusic();
-        renderHomeVibe();
-        updateBadges();
-        return;
-      } catch {}
-    }
-    if (payload.action === 'add' && payload.track) {
-      appState.music.queue.push({ id: String(Date.now()), ...payload.track, addedBy: payload.addedBy || currentUser, note: payload.note || '', votes: [currentUser], played: false });
-    } else if (payload.action === 'play') {
-      appState.music.nowPlayingVideoId = payload.videoId;
-      appState.music.queue.forEach((q) => { if (q.id === payload.queueId) q.played = true; });
-    }
-    saveLocalState();
-    renderMusic();
-    renderHomeVibe();
-    updateBadges();
-  }
-
-  async function runMusicSearch(inputEl, noteVal, boxEl) {
-    const q = inputEl.value.trim();
-    if (!q) return;
-    if (!apiBase) {
-      boxEl.innerHTML = `<div style="padding:12px;" class="muted">Offline right now — tap <strong>+ Collaborate</strong> to add directly in YouTube Music.</div>`;
-      boxEl.classList.remove('hidden');
-      return;
-    }
-    const data = await apiFetch(`/api/music/search?q=${encodeURIComponent(q)}`);
-    const results = data.results || [];
-    boxEl.innerHTML = '';
-    if (!results.length) {
-      boxEl.innerHTML = `<div style="padding:12px;" class="muted">No songs found. Try another title or paste a YouTube link.</div>`;
-      boxEl.classList.remove('hidden');
-      return;
-    }
-    results.forEach((t) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'search-item';
-      btn.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-          <img class="track-thumb" src="${esc(t.thumbnail)}" alt="">
-          <div style="min-width:0;">
-            <div class="track-title">${esc(t.title)}</div>
-            <div class="track-meta">${esc(t.channel)}${t.duration ? ' • ' + esc(t.duration) : ''}</div>
-          </div>
-        </div>
-        <span class="btn btn-sm btn-lime">+ Add</span>`;
-      btn.addEventListener('click', async () => {
-        inputEl.value = '';
-        boxEl.classList.add('hidden');
-        await musicQueueAction({ action: 'add', track: t, addedBy: currentUser, note: noteVal });
-        closeAllSheets();
-      });
-      boxEl.appendChild(btn);
-    });
-    boxEl.classList.remove('hidden');
+  async function refreshPlaylist() {
+    const btn = document.getElementById('refresh-playlist-btn');
+    if (btn) btn.textContent = 'Syncing...';
+    try {
+      if (apiBase) {
+        const res = await apiFetch('/api/music/playlist?force=1');
+        if (Array.isArray(res.tracks)) {
+          appState.music.playlistTitle = res.playlistTitle || appState.music.playlistTitle;
+          appState.music.playlistTracks = res.tracks;
+          if (res.collabUrl) appState.music.collabUrl = res.collabUrl;
+          saveLocalState();
+          renderMusic();
+          renderHomeVibe();
+        }
+      }
+      playOfficialPlaylist();
+    } catch {}
+    if (btn) btn.textContent = '↻ Sync List';
   }
 
   function renderMusic() {
-    const qList = document.getElementById('music-queue-list');
-    const queue = appState.music?.queue || [];
-    qList.innerHTML = '';
-    if (!queue.length) {
-      qList.innerHTML = `<p class="muted" style="text-align:center; padding:6px 0;">No songs requested yet — search above to add one!</p>`;
-    } else {
-      const sorted = [...queue].sort((a, b) => Number(a.played) - Number(b.played) || (b.votes?.length || 0) - (a.votes?.length || 0));
-      sorted.forEach((q) => {
-        const voted = (q.votes || []).includes(currentUser);
-        const row = document.createElement('div');
-        row.className = 'track-row';
-        if (q.played) row.style.opacity = '0.5';
-        row.innerHTML = `
-          <img class="track-thumb" src="${esc(q.thumbnail)}" alt="">
-          <div class="track-info">
-            <div class="track-title">${esc(q.title)}</div>
-            <div class="track-meta">${esc(q.addedBy)}${q.note ? ' — "' + esc(q.note) + '"' : ''}</div>
-          </div>
-          <div style="display:flex; gap:5px; flex-shrink:0;">
-            <button class="btn btn-sm btn-lime play-q-btn">Play</button>
-            <button class="btn btn-sm vote-q-btn" style="${voted ? 'border-color:var(--lime);color:var(--lime);' : ''}">👍 ${(q.votes || []).length}</button>
-          </div>`;
-        row.querySelector('.play-q-btn').addEventListener('click', () => {
-          musicQueueAction({ action: 'play', queueId: q.id, videoId: q.videoId });
-          playVideoInEmbed(q.videoId, `Playing: ${q.title}`);
-        });
-        row.querySelector('.vote-q-btn').addEventListener('click', () => {
-          musicQueueAction({ action: 'vote', queueId: q.id, who: currentUser });
-        });
-        qList.appendChild(row);
-      });
+    const tracks = appState.music?.playlistTracks || [];
+    const countEl = document.getElementById('playlist-count-label');
+    if (countEl) {
+      countEl.textContent = tracks.length ? `Playlist Tracks (${tracks.length})` : 'Playlist Tracks';
     }
 
     const pList = document.getElementById('playlist-tracks-list');
-    const tracks = appState.music?.playlistTracks || [];
     pList.innerHTML = tracks.length
       ? ''
-      : `<p class="muted">Open YouTube Music above to play or edit the playlist.</p>`;
+      : `<p class="muted">Tap the green button above to open &amp; add songs in YouTube Music.</p>`;
     tracks.forEach((t, i) => {
       const row = document.createElement('div');
       row.className = 'track-row';
@@ -1035,7 +957,7 @@
           <div class="track-title">${i + 1}. ${esc(t.title)}</div>
           <div class="track-meta">${esc(t.channel)}${t.duration ? ' • ' + esc(t.duration) : ''}</div>
         </div>
-        <button class="btn btn-sm play-pl-btn">Play</button>`;
+        <button class="btn btn-sm play-pl-btn" type="button">Play</button>`;
       row.querySelector('.play-pl-btn').addEventListener('click', () => playVideoInEmbed(t.videoId, `Playing: ${t.title}`));
       pList.appendChild(row);
     });
@@ -1112,8 +1034,7 @@
     };
     setBadge('badge-stops', (appState.trip?.stops || []).filter((s) => !s.reached).length);
     setBadge('badge-tx', (appState.tripsplitter?.transactions || []).length);
-    const vibeCount = (appState.music?.queue || []).filter((q) => !q.played).length + (appState.messages || []).length;
-    setBadge('badge-vibe', vibeCount);
+    setBadge('badge-vibe', (appState.messages || []).length);
   }
 
   function renderAll() {
@@ -1178,7 +1099,6 @@
         iframe?.contentWindow?.postMessage({ type: 'tripsplitter:openModal', modal: 'expense' }, window.location.origin);
       }, 120);
     });
-    document.getElementById('qa-song-btn').addEventListener('click', () => openSheet('sheet-song'));
     document.getElementById('qa-msg-btn').addEventListener('click', () => openSheet('sheet-msg'));
 
     // Close sheets
@@ -1227,23 +1147,9 @@
       if (map && appState.location?.lat != null) map.setView([appState.location.lat, appState.location.lon], 11);
     });
 
-    // Music Searches (Tab + Sheet)
+    // Music Playlist Controls
     document.getElementById('play-playlist-btn').addEventListener('click', playOfficialPlaylist);
-    document.getElementById('music-search-btn').addEventListener('click', () => {
-      runMusicSearch(document.getElementById('music-search-input'), '', document.getElementById('music-search-results'));
-    });
-    document.getElementById('music-search-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); runMusicSearch(document.getElementById('music-search-input'), '', document.getElementById('music-search-results')); }
-    });
-    document.getElementById('sheet-song-btn').addEventListener('click', () => {
-      runMusicSearch(document.getElementById('sheet-song-input'), document.getElementById('sheet-song-note').value.trim(), document.getElementById('sheet-song-results'));
-    });
-    document.getElementById('sheet-song-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        runMusicSearch(document.getElementById('sheet-song-input'), document.getElementById('sheet-song-note').value.trim(), document.getElementById('sheet-song-results'));
-      }
-    });
+    document.getElementById('refresh-playlist-btn')?.addEventListener('click', refreshPlaylist);
 
     // Chat (Tab + Sheet)
     document.getElementById('msg-form').addEventListener('submit', (e) => {
