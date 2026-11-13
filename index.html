@@ -3,8 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07080D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Roadtrip">
   <title>Roadtrip Companion</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%230A0B0F'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%23C8FF3D'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%230A0B0F'/%3E%3C/svg%3E">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <script>try{if(localStorage.getItem('roadtrip_welcomed_v3')==='1')document.documentElement.classList.add('welcomed');}catch{}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -12,6 +20,91 @@
 </head>
 <body>
   <div class="ambient-glow"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- FIRST-VISIT WELCOME SPLASH SCREEN -->
+  <section id="welcome-splash" class="welcome-splash" aria-label="Welcome to Roadtrip">
+    <div class="welcome-aurora welcome-aurora-a"></div>
+    <div class="welcome-aurora welcome-aurora-b"></div>
+    <div class="welcome-grid-bg"></div>
+
+    <div class="welcome-inner">
+      <div class="welcome-header">
+        <div class="welcome-emblem" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none">
+            <defs>
+              <linearGradient id="wRouteGrad" x1="12" y1="50" x2="52" y2="14" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#9D7BFF"/>
+                <stop offset="0.55" stop-color="#5CE1FF"/>
+                <stop offset="1" stop-color="#C8FF3D"/>
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="60" height="60" rx="20" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+            <path d="M16 47 C16 31 46 37 47 18" stroke="url(#wRouteGrad)" stroke-width="4.5" stroke-linecap="round"/>
+            <circle cx="16" cy="47" r="4" fill="#9D7BFF"/>
+            <circle cx="31.5" cy="32.5" r="3" fill="#FFFFFF"/>
+            <circle cx="47" cy="18" r="6" fill="#C8FF3D"/>
+            <circle cx="47" cy="18" r="2.2" fill="#07080D"/>
+          </svg>
+        </div>
+        <div class="welcome-trip-pill" id="welcome-trip-pill">DANGEROUS BUSINESS</div>
+        <h1 class="welcome-title">Welcome aboard!</h1>
+        <p class="welcome-sub">Everything for our drive in one easy place.</p>
+      </div>
+
+      <div class="welcome-features">
+        <div class="wf-card">
+          <div class="wf-icon lime" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 21s-6-5.3-6-11a6 6 0 1 1 12 0c0 5.7-6 11-6 11z"/>
+              <circle cx="12" cy="10" r="2.3"/>
+            </svg>
+          </div>
+          <div>
+            <div class="wf-title">Where We Are &amp; Stops</div>
+            <div class="wf-desc">Live arrival time, town updates, and 1-tap coffee or gas stops.</div>
+          </div>
+        </div>
+
+        <div class="wf-card">
+          <div class="wf-icon sky" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2.5" y="5.5" width="19" height="13" rx="3"/>
+              <path d="M2.5 10h19"/>
+              <path d="M7 15h4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="wf-title">Easy Bill Split</div>
+            <div class="wf-desc">Add gas, food &amp; hotel costs—no math needed.</div>
+          </div>
+        </div>
+
+        <div class="wf-card">
+          <div class="wf-icon purple" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l11-2v13"/>
+              <circle cx="6.5" cy="18" r="2.5"/>
+              <circle cx="17.5" cy="16" r="2.5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="wf-title">Car DJ &amp; Notes</div>
+            <div class="wf-desc">Queue songs on YouTube Music and send quick car notes.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="welcome-picker-wrap">
+        <div class="welcome-picker-label">Who's holding this phone?</div>
+        <div class="welcome-crew-grid" id="welcome-crew-grid"></div>
+      </div>
+
+      <button id="welcome-go-btn" class="welcome-cta" type="button" disabled>
+        <span>Tap your name above</span>
+      </button>
+    </div>
+  </section>
 
   <div class="app-shell">
     <!-- Clean 1-Row App Header -->
@@ -20,12 +113,12 @@
         <div class="avatar-circle" id="who-avatar">T</div>
         <div>
           <div class="who-kicker">Riding along</div>
-          <div class="who-name">Hey, <span id="who-label">Tim</span> <span style="font-size:0.75rem; color:var(--muted);">▾</span></div>
+          <div class="who-name">Hey, <span id="who-label">Tim</span> <span class="who-caret">▾</span></div>
         </div>
       </button>
 
       <div style="display:flex; align-items:center; gap:8px;">
-        <span id="offline-dot" class="muted hidden" style="font-size:0.7rem;">Offline</span>
+        <span id="offline-dot" class="offline-pill hidden">Offline</span>
         <button id="gps-toggle-btn" class="gps-pill" type="button">
           <span class="dot"></span>
           <span id="gps-btn-label">Share Location</span>
@@ -58,17 +151,17 @@
         </div>
 
         <div class="hero-stats">
-          <div>
+          <div class="hero-stat-item">
             <div class="stat-k">Distance Left</div>
             <div class="stat-v" id="m-miles-left">—</div>
           </div>
-          <div>
+          <div class="hero-stat-item">
             <div class="stat-k">Speed</div>
             <div class="stat-v" id="m-speed">—</div>
           </div>
-          <div>
+          <div class="hero-stat-item">
             <div class="stat-k">Next Stop</div>
-            <div class="stat-v" id="m-next-stop">None</div>
+            <div class="stat-v stat-v-stop" id="m-next-stop">None</div>
           </div>
         </div>
       </section>
@@ -76,21 +169,54 @@
       <!-- Signature 4 Circular Quick Actions -->
       <section class="quick-actions">
         <button class="qa-btn accent" id="qa-stop-btn" type="button">
-          <div class="qa-circle">＋</div>
-          <div class="qa-label">Add Stop</div>
+          <div class="qa-circle" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+          <div class="qa-label">Add<br>Stop</div>
         </button>
         <button class="qa-btn purple" id="qa-cost-btn" type="button">
-          <div class="qa-circle">$</div>
-          <div class="qa-label">Add Cost</div>
+          <div class="qa-circle" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v18"/>
+              <path d="M16.5 7.5a4 4 0 0 0-4.5-2.5c-2.5 0-4.2 1.3-4.2 3.3 0 4.3 9.2 2.2 9.2 6.8 0 2.1-1.9 3.6-4.7 3.6-2.4 0-4.1-.9-4.9-2.5"/>
+            </svg>
+          </div>
+          <div class="qa-label">Add<br>Cost</div>
         </button>
         <button class="qa-btn" id="qa-song-btn" type="button">
-          <div class="qa-circle">♪</div>
-          <div class="qa-label">Add Song</div>
+          <div class="qa-circle" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 17.5V6l9-1.8V15.5"/>
+              <circle cx="6.5" cy="17.5" r="2.5" fill="currentColor" stroke="none"/>
+              <circle cx="15.5" cy="15.5" r="2.5" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <div class="qa-label">Add<br>Song</div>
         </button>
         <button class="qa-btn" id="qa-msg-btn" type="button">
-          <div class="qa-circle">💬</div>
+          <div class="qa-circle" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-.9L3 20.5l1.6-4.8A8.5 8.5 0 1 1 21 11.5z"/>
+              <circle cx="9.2" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="12.5" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+              <circle cx="15.8" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
           <div class="qa-label">Note</div>
         </button>
+      </section>
+
+      <!-- Add to Home Screen Prompt Card (hidden if already installed / dismissed) -->
+      <section id="install-banner" class="install-card hidden" aria-label="Save to Home Screen">
+        <img src="./icons/icon-192.png" alt="Roadtrip App Icon" class="install-icon">
+        <div class="install-copy">
+          <div class="install-title">Add to Home Screen</div>
+          <div class="install-sub" id="install-banner-sub">Save as an app for 1-tap access all trip</div>
+        </div>
+        <button id="install-banner-btn" class="btn btn-lime btn-sm install-cta" type="button">Add</button>
+        <button id="install-banner-close" class="install-close" type="button" aria-label="Dismiss install prompt">✕</button>
       </section>
 
       <!-- Money Snapshot Card (Dribbble Balance + Donut Preview) -->
@@ -106,9 +232,9 @@
             <div class="money-big" id="home-total-spent">$0.00</div>
             <div id="home-my-balance" class="balance-badge even">Everyone is even</div>
           </div>
-          <div style="position:relative; width:74px; height:74px; flex-shrink:0; display:grid; place-items:center;">
-            <svg id="home-donut" viewBox="0 0 100 100" style="width:100%; height:100%; transform:rotate(-90deg);"></svg>
-            <span class="muted" style="position:absolute; font-size:0.65rem; font-weight:800;">SPLIT</span>
+          <div class="donut-box">
+            <svg id="home-donut" viewBox="0 0 100 100" class="donut-svg"></svg>
+            <span class="donut-center-label">SPLIT</span>
           </div>
         </div>
       </section>
@@ -121,7 +247,13 @@
         </div>
 
         <a class="track-row" style="text-decoration:none; color:inherit; margin-bottom:10px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc" target="_blank" rel="noopener">
-          <div style="width:42px; height:42px; border-radius:12px; background:rgba(200,255,61,0.14); color:var(--lime); display:grid; place-items:center; font-size:1.2rem; flex-shrink:0;">🎵</div>
+          <div class="music-app-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l11-2v13"/>
+              <circle cx="6.5" cy="18" r="2.5" fill="currentColor" stroke="none"/>
+              <circle cx="17.5" cy="16" r="2.5" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
           <div class="track-info">
             <div class="track-title" id="home-music-title">Dangerous.Business Playlist</div>
             <div class="track-meta" id="home-music-sub">Tap to open in YouTube Music</div>
@@ -230,24 +362,95 @@
     </main>
   </div>
 
-  <!-- Native Fixed Bottom Tab Bar -->
+  <!-- Native Fixed Bottom Tab Bar (Dimensional Vector Icons) -->
   <nav class="bottom-nav" role="tablist">
     <button class="nav-item active" data-tab="home" type="button">
-      <span class="nav-icon">🏠</span>
+      <span class="nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 36 36" fill="none">
+          <defs>
+            <linearGradient id="icoHomeRoof" x1="5" y1="6" x2="31" y2="18" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#FF7A59"/>
+              <stop offset="1" stop-color="#D9482B"/>
+            </linearGradient>
+            <linearGradient id="icoHomeWall" x1="8" y1="15" x2="28" y2="33" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#FFF2DC"/>
+              <stop offset="1" stop-color="#E6CFAF"/>
+            </linearGradient>
+          </defs>
+          <path d="M8 16.5L18 8L28 16.5V30C28 31.1 27.1 32 26 32H10C8.9 32 8 31.1 8 30V16.5Z" fill="url(#icoHomeWall)"/>
+          <path d="M5 17L18 6L31 17C31.7 17.6 31.3 18.8 30.3 18.8H28.5L18 9.9L7.5 18.8H5.7C4.7 18.8 4.3 17.6 5 17Z" fill="url(#icoHomeRoof)"/>
+          <rect x="21" y="19" width="4.5" height="5" rx="1.2" fill="#5CC8FF"/>
+          <path d="M12.5 32V22.5C12.5 21.4 13.4 20.5 14.5 20.5H16.5C17.6 20.5 18.5 21.4 18.5 22.5V32H12.5Z" fill="#7D5A44"/>
+          <rect x="6" y="31" width="24" height="2" rx="1" fill="#63C74D"/>
+        </svg>
+      </span>
       <span>Home</span>
     </button>
+
     <button class="nav-item" data-tab="stops" type="button">
-      <span class="nav-icon">🗺️</span>
+      <span class="nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 36 36" fill="none">
+          <defs>
+            <linearGradient id="icoMapSeaL" x1="4" y1="8" x2="14" y2="30" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#D7F4FF"/>
+              <stop offset="1" stop-color="#9BE2FF"/>
+            </linearGradient>
+            <linearGradient id="icoMapSeaM" x1="14" y1="8" x2="22" y2="30" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#8FD9FF"/>
+              <stop offset="1" stop-color="#58BFFF"/>
+            </linearGradient>
+            <linearGradient id="icoMapSeaR" x1="22" y1="8" x2="32" y2="30" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#CFEFFF"/>
+              <stop offset="1" stop-color="#89D6FF"/>
+            </linearGradient>
+          </defs>
+          <path d="M4.5 10.5L13.5 7V27.5L4.5 31V10.5Z" fill="url(#icoMapSeaL)"/>
+          <path d="M13.5 7L22.5 10.5V31L13.5 27.5V7Z" fill="url(#icoMapSeaM)"/>
+          <path d="M22.5 10.5L31.5 7V27.5L22.5 31V10.5Z" fill="url(#icoMapSeaR)"/>
+          <path d="M6.5 14C8.5 12.8 11 13.5 12.2 15.5C13 16.8 11.8 19.5 10 20.5C8.5 21.3 6.5 19.5 6.5 17V14Z" fill="#4CE07B"/>
+          <path d="M15 11.5C17.5 11.2 19.8 12.8 20.5 15C21 16.6 19.5 18.8 17.5 18.8C15.8 18.8 14.5 17 14.8 14.5L15 11.5Z" fill="#59E888"/>
+          <path d="M24 14.5C26 13.5 29 14.2 29.8 16.5C30.4 18.2 28.5 22 26.2 22.8C24.5 23.4 23.5 20.5 23.8 17.5L24 14.5Z" fill="#4CE07B"/>
+          <path d="M16.2 21.5L20 22.8V27L16.2 25.4V21.5Z" fill="#3BC96B"/>
+        </svg>
+      </span>
       <span>Stops</span>
       <span class="nav-badge hidden" id="badge-stops">0</span>
     </button>
+
     <button class="nav-item" data-tab="split" type="button">
-      <span class="nav-icon">💳</span>
+      <span class="nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 36 36" fill="none">
+          <defs>
+            <linearGradient id="icoCardBg" x1="4" y1="8" x2="32" y2="28" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#58B7F5"/>
+              <stop offset="1" stop-color="#2876C7"/>
+            </linearGradient>
+          </defs>
+          <rect x="4" y="8" width="28" height="20" rx="4" fill="url(#icoCardBg)"/>
+          <rect x="4" y="13" width="28" height="4.5" fill="#182C4C"/>
+          <rect x="8" y="20.5" width="7" height="4.5" rx="1.2" fill="#FDE047"/>
+          <rect x="18" y="21.5" width="9.5" height="2.4" rx="1.2" fill="#BAE6FD"/>
+        </svg>
+      </span>
       <span>Split</span>
       <span class="nav-badge hidden" id="badge-tx">0</span>
     </button>
+
     <button class="nav-item" data-tab="vibe" type="button">
-      <span class="nav-icon">🎵</span>
+      <span class="nav-icon" aria-hidden="true">
+        <svg viewBox="0 0 36 36" fill="none">
+          <defs>
+            <linearGradient id="icoMusicGrad" x1="8" y1="6" x2="29" y2="30" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#B9A6FF"/>
+              <stop offset="1" stop-color="#6F51D9"/>
+            </linearGradient>
+          </defs>
+          <path d="M14.5 25V10.2C14.5 9.2 15.2 8.4 16.1 8.2L27.6 5.9C28.8 5.7 30 6.6 30 7.9V22.5" stroke="url(#icoMusicGrad)" stroke-width="4.2" stroke-linecap="round"/>
+          <path d="M15.5 12.2L29 9.5" stroke="url(#icoMusicGrad)" stroke-width="3.6" stroke-linecap="round"/>
+          <ellipse cx="11.2" cy="25.8" rx="4.8" ry="3.8" fill="url(#icoMusicGrad)"/>
+          <ellipse cx="26" cy="23.2" rx="4.8" ry="3.8" fill="url(#icoMusicGrad)"/>
+        </svg>
+      </span>
       <span>Music &amp; Chat</span>
       <span class="nav-badge hidden" id="badge-vibe">0</span>
     </button>
@@ -262,6 +465,30 @@
         <button class="subtle-pill-btn close-sheet-btn" type="button">Done</button>
       </div>
       <div class="crew-grid" id="who-grid"></div>
+      <div class="sheet-who-footer">
+        <button id="who-install-btn" class="btn btn-purple hidden" type="button">Add to Home Screen</button>
+        <button id="who-welcome-btn" class="btn" type="button">Show Welcome Guide</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM SHEET: Add to Home Screen Instructions -->
+  <div id="sheet-install" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-head">
+        <div class="card-title">Save Roadtrip to Home Screen</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Got it</button>
+      </div>
+      <div class="install-sheet-hero">
+        <img src="./icons/icon-192.png" alt="Roadtrip App Icon" class="install-sheet-icon">
+        <div>
+          <div style="font-weight:800; font-size:1.05rem;">Roadtrip App</div>
+          <div class="muted">Opens full-screen cleanly like a real app</div>
+        </div>
+      </div>
+      <div id="install-steps-list" class="install-steps"></div>
+      <button id="sheet-install-native-btn" class="btn btn-lime btn-full hidden" style="margin-top:12px;" type="button">Install App Now</button>
     </div>
   </div>
 

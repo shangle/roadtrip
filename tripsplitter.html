@@ -73,26 +73,26 @@
             <div class="rounded-3xl p-5 border border-white/10" style="background: linear-gradient(145deg, #191C28 0%, #12141C 100%);">
                 <div class="flex items-center justify-between gap-4">
                     <div>
-                        <p class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">Total Trip Spent</p>
-                        <p class="text-3xl font-extrabold text-white mt-1 tracking-tight" id="display-total">$0.00</p>
-                        <p class="text-xs text-[#C8FF3D] font-semibold mt-1">
+                        <p class="text-xs uppercase tracking-widest text-slate-400 font-extrabold">Total Trip Spent</p>
+                        <p class="text-4xl font-extrabold text-white mt-1 tracking-tight" id="display-total">$0.00</p>
+                        <p class="text-sm text-[#C8FF3D] font-bold mt-1">
                             <span id="display-per-person">$0.00</span> per person
                         </p>
                     </div>
                     <!-- Donut Chart -->
                     <div class="relative w-24 h-24 shrink-0 flex items-center justify-center">
                         <svg id="spend-donut" viewBox="0 0 100 100" class="w-full h-full -rotate-90"></svg>
-                        <span class="absolute text-[10px] font-bold uppercase tracking-wider text-slate-400">Split</span>
+                        <span class="absolute text-xs font-extrabold uppercase tracking-wider text-slate-300">Split</span>
                     </div>
                 </div>
 
                 <!-- Quick Dual Actions -->
                 <div class="grid grid-cols-2 gap-2.5 mt-4">
-                    <button onclick="openModal('expense')" class="bg-[#C8FF3D] hover:brightness-95 text-[#0A0B0F] py-3 px-4 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+                    <button onclick="openModal('expense')" class="bg-[#C8FF3D] hover:brightness-95 text-[#0A0B0F] py-3.5 px-4 rounded-2xl font-extrabold text-base flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         <span>Add Expense</span>
                     </button>
-                    <button onclick="openModal('payment')" class="bg-[#9D7BFF]/20 hover:bg-[#9D7BFF]/30 text-[#D4C5FF] border border-[#9D7BFF]/30 py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+                    <button onclick="openModal('payment')" class="bg-[#9D7BFF]/20 hover:bg-[#9D7BFF]/30 text-[#E0D4FF] border border-[#9D7BFF]/35 py-3.5 px-4 rounded-2xl font-extrabold text-base flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
                         <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
                         <span>Pay Back</span>
                     </button>
@@ -102,8 +102,8 @@
             <!-- Who Pays Who (Settlement Plan) -->
             <div class="surface rounded-3xl overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-white/5 flex justify-between items-center">
-                    <h2 class="font-bold text-sm text-white">How to Settle Up</h2>
-                    <button onclick="openModal('people')" class="text-xs text-slate-400 hover:text-white font-semibold flex items-center gap-1">
+                    <h2 class="font-extrabold text-base text-white">How to Settle Up</h2>
+                    <button onclick="openModal('people')" class="text-xs text-slate-300 hover:text-white font-bold flex items-center gap-1">
                         <i data-lucide="users" class="w-3.5 h-3.5"></i>
                         <span>Crew</span>
                     </button>
@@ -116,8 +116,8 @@
             <!-- Balance By Person -->
             <div class="surface rounded-3xl overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-white/5 cursor-pointer flex justify-between items-center" onclick="toggleMath()">
-                    <h2 class="font-bold text-sm text-white">Everyone's Balance</h2>
-                    <div class="flex items-center gap-1 text-slate-400 text-xs hover:text-[#C8FF3D]">
+                    <h2 class="font-extrabold text-base text-white">Everyone's Balance</h2>
+                    <div class="flex items-center gap-1 text-slate-400 text-xs font-bold hover:text-[#C8FF3D]">
                         <span>See Breakdown</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="math-chevron"></i>
                     </div>
@@ -128,7 +128,7 @@
 
             <!-- Expense History -->
             <div>
-                <h3 class="font-bold text-sm text-slate-300 mb-2.5 px-1">Recent Expenses</h3>
+                <h3 class="font-extrabold text-base text-slate-200 mb-2.5 px-1">Recent Expenses</h3>
                 <div id="transaction-list" class="space-y-2.5"></div>
             </div>
         </div>
@@ -579,16 +579,16 @@
                             <i data-lucide="${icon}" class="w-4 h-4"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-sm text-white truncate">${esc(t.description)}</p>
+                            <p class="font-extrabold text-base text-white truncate">${esc(t.description)}</p>
                             <p class="text-xs text-slate-400 truncate">
                                 ${isExpense
-                                    ? `Paid by <span class="text-slate-200 font-semibold">${esc(t.payer)}</span>`
-                                    : `<span class="text-slate-200 font-semibold">${esc(t.payer)}</span> → <span class="text-slate-200 font-semibold">${esc(t.payee)}</span>`}
+                                    ? `Paid by <span class="text-slate-200 font-bold">${esc(t.payer)}</span>`
+                                    : `<span class="text-slate-200 font-bold">${esc(t.payer)}</span> → <span class="text-slate-200 font-bold">${esc(t.payee)}</span>`}
                             </p>
                         </div>
                     </div>
                     <div class="text-right shrink-0">
-                        <p class="font-extrabold text-sm text-white">$${Number(t.amount).toFixed(2)}</p>
+                        <p class="font-extrabold text-base text-white">$${Number(t.amount).toFixed(2)}</p>
                         <div class="flex items-center justify-end gap-2.5 mt-1">
                             <button onclick="editTransaction(${Number(t.id)})" class="text-slate-500 hover:text-[#C8FF3D]" title="Edit">
                                 <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
@@ -633,9 +633,9 @@
                 const label = isPos ? 'Gets back' : (isNeg ? 'Owes' : 'Even');
                 balanceGrid.innerHTML += `
                     <div class="px-1">
-                        <p class="font-bold text-slate-200 text-xs truncate">${esc(b.name)}</p>
-                        <p class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">${label}</p>
-                        <p class="font-extrabold text-sm mt-0.5 ${color}">$${Math.abs(b.amount).toFixed(0)}</p>
+                        <p class="font-extrabold text-slate-100 text-sm truncate">${esc(b.name)}</p>
+                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">${label}</p>
+                        <p class="font-extrabold text-base mt-0.5 ${color}">$${Math.abs(b.amount).toFixed(0)}</p>
                     </div>`;
             });
 
@@ -654,13 +654,13 @@
                 const amount = Math.min(Math.abs(debtor.amount), creditor.amount);
                 if (amount > 0) {
                     settlementContainer.innerHTML += `
-                        <div class="flex items-center justify-between p-3 surface-soft rounded-2xl">
-                            <div class="flex items-center gap-2 text-sm">
-                                <span class="font-bold text-rose-400">${esc(debtor.name)}</span>
-                                <span class="text-slate-400 text-xs">pays</span>
-                                <span class="font-bold text-[#C8FF3D]">${esc(creditor.name)}</span>
+                        <div class="flex items-center justify-between p-3.5 surface-soft rounded-2xl">
+                            <div class="flex items-center gap-2 text-base">
+                                <span class="font-extrabold text-rose-400">${esc(debtor.name)}</span>
+                                <span class="text-slate-400 text-xs font-semibold">pays</span>
+                                <span class="font-extrabold text-[#C8FF3D]">${esc(creditor.name)}</span>
                             </div>
-                            <span class="font-extrabold text-white text-sm">$${amount.toFixed(2)}</span>
+                            <span class="font-extrabold text-white text-base">$${amount.toFixed(2)}</span>
                         </div>`;
                 }
                 debtor.amount += amount;

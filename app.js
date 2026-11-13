@@ -6,10 +6,14 @@
   const DEFAULT_CREW = ['Tim', 'Chris', 'Jessica', 'Nancy'];
   const DONUT_COLORS = ['#C8FF3D', '#9D7BFF', '#38BDF8', '#FB7185', '#FBBF24'];
   const LOCAL_STORAGE_KEY = 'roadtrip_hub_offline_state_v2';
+  const WELCOME_KEY = 'roadtrip_welcomed_v3';
+  const A2HS_DISMISS_KEY = 'roadtrip_a2hs_dismissed_v1';
 
   let apiBase = null;
   let eventSource = null;
   let currentUser = localStorage.getItem('roadtrip_who') || 'Tim';
+  let welcomeSelectedUser = localStorage.getItem('roadtrip_who') || null;
+  let deferredInstallPrompt = null;
   let gpsWatchId = null;
   let gpsEnabled = localStorage.getItem('roadtrip_gps_on') === '1';
   let lastGpsSentAt = 0;
@@ -214,11 +218,215 @@
     eventSource.onerror = () => setOnlineStatus(false);
   }
 
+  // --- Crew Colors & Welcome / Install Helpers ---
+  function avatarClassFor(name) {
+    const key = String(name || '').trim().toLowerCase();
+    if (key === 'tim') return 'avatar-tim';
+    if (key === 'chris') return 'avatar-chris';
+    if (key === 'jessica') return 'avatar-jessica';
+    if (key === 'nancy') return 'avatar-nancy';
+    return '';
+  }
+
+  function isStandalone() {
+    return (
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.matchMedia?.('(display-mode: fullscreen)').matches ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function isIosDevice() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isWelcomed() {
+    try { return localStorage.getItem(WELCOME_KEY) === '1'; } catch { return false; }
+  }
+
+  function wasInstallDismissed() {
+    try {
+      const ts = Number(localStorage.getItem(A2HS_DISMISS_KEY) || 0);
+      return ts > 0 && Date.now() - ts < 12 * 60 * 60 * 1000;
+    } catch { return false; }
+  }
+
+  function renderWelcome() {
+    const crew = appState.crew?.length ? appState.crew : DEFAULT_CREW;
+    const dest = appState.trip?.destination;
+    const miles = appState.location?.remainingMeters;
+    const pill = document.getElementById('welcome-trip-pill');
+    if (pill) {
+      if (dest && miles != null) {
+        pill.textContent = `TO ${String(dest.name).toUpperCase()} • ${formatMiles(miles).toUpperCase()}`;
+      } else if (dest) {
+        pill.textContent = `TO ${String(dest.name).toUpperCase()}`;
+      } else {
+        pill.textContent = 'DANGEROUS BUSINESS ROADTRIP';
+      }
+    }
+
+    const grid = document.getElementById('welcome-crew-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    crew.forEach((person) => {
+      const active = person === welcomeSelectedUser;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `welcome-crew-btn${active ? ' active' : ''}`;
+      btn.innerHTML = `
+        <div class="avatar-circle ${avatarClassFor(person)}">${esc(person.charAt(0).toUpperCase())}</div>
+        <span>${esc(person)}</span>
+        <span class="welcome-check" aria-hidden="true">✓</span>`;
+      btn.addEventListener('click', () => {
+        welcomeSelectedUser = person;
+        renderWelcome();
+      });
+      grid.appendChild(btn);
+    });
+
+    const cta = document.getElementById('welcome-go-btn');
+    if (cta) {
+      if (welcomeSelectedUser) {
+        cta.disabled = false;
+        cta.innerHTML = `<span>Hop In as ${esc(welcomeSelectedUser)} →</span>`;
+      } else {
+        cta.disabled = true;
+        cta.innerHTML = `<span>Tap your name above</span>`;
+      }
+    }
+  }
+
+  function completeWelcome() {
+    if (!welcomeSelectedUser) return;
+    currentUser = welcomeSelectedUser;
+    try {
+      localStorage.setItem('roadtrip_who', currentUser);
+      localStorage.setItem(WELCOME_KEY, '1');
+    } catch {}
+    renderWho();
+    renderMoneyOverview();
+    renderMessages();
+
+    const splash = document.getElementById('welcome-splash');
+    if (splash) {
+      splash.classList.add('leaving');
+      setTimeout(() => {
+        document.documentElement.classList.add('welcomed');
+        splash.classList.remove('leaving');
+        updateInstallUI();
+      }, 340);
+    } else {
+      document.documentElement.classList.add('welcomed');
+      updateInstallUI();
+    }
+  }
+
+  function showWelcomeSplash() {
+    welcomeSelectedUser = currentUser || localStorage.getItem('roadtrip_who') || null;
+    closeAllSheets();
+    renderWelcome();
+    const splash = document.getElementById('welcome-splash');
+    splash?.classList.remove('leaving');
+    document.documentElement.classList.remove('welcomed');
+  }
+
+  function updateInstallUI() {
+    const standalone = isStandalone();
+    const banner = document.getElementById('install-banner');
+    const whoBtn = document.getElementById('who-install-btn');
+    const sub = document.getElementById('install-banner-sub');
+
+    if (whoBtn) whoBtn.classList.toggle('hidden', standalone);
+    if (!banner) return;
+
+    const shouldShowBanner = isWelcomed() && !standalone && !wasInstallDismissed();
+    banner.classList.toggle('hidden', !shouldShowBanner);
+
+    if (sub) {
+      if (deferredInstallPrompt) {
+        sub.textContent = 'Tap Add to save it like a real app';
+      } else if (isIosDevice()) {
+        sub.textContent = '2 quick taps in Safari to save to Home Screen';
+      } else {
+        sub.textContent = 'Save as an app for 1-tap access all trip';
+      }
+    }
+  }
+
+  function openInstallGuideSheet() {
+    const list = document.getElementById('install-steps-list');
+    const nativeBtn = document.getElementById('sheet-install-native-btn');
+    const ios = isIosDevice();
+
+    if (nativeBtn) nativeBtn.classList.toggle('hidden', !deferredInstallPrompt);
+
+    const shareSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M7.5 7.5L12 3l4.5 4.5"/><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/></svg>`;
+    const plusBoxSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg>`;
+    const menuSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/></svg>`;
+
+    if (ios) {
+      list.innerHTML = `
+        <div class="install-step">
+          <div class="install-step-num">1</div>
+          <div class="install-step-ico">${shareSvg}</div>
+          <div>
+            <div style="font-weight:800; font-size:0.98rem;">Tap the Share button</div>
+            <div class="muted">The square with an up-arrow at the bottom of Safari</div>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">2</div>
+          <div class="install-step-ico">${plusBoxSvg}</div>
+          <div>
+            <div style="font-weight:800; font-size:0.98rem;">Tap "Add to Home Screen"</div>
+            <div class="muted">Scroll down slightly, then tap Add in the top right</div>
+          </div>
+        </div>`;
+    } else {
+      list.innerHTML = `
+        <div class="install-step">
+          <div class="install-step-num">1</div>
+          <div class="install-step-ico">${menuSvg}</div>
+          <div>
+            <div style="font-weight:800; font-size:0.98rem;">Open your browser menu</div>
+            <div class="muted">Tap the ⋮ button in the top corner (Chrome / Edge / Samsung)</div>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="install-step-num">2</div>
+          <div class="install-step-ico">${plusBoxSvg}</div>
+          <div>
+            <div style="font-weight:800; font-size:0.98rem;">Tap "Add to Home screen" or "Install app"</div>
+            <div class="muted">Creates a full-screen Roadtrip icon on your phone</div>
+          </div>
+        </div>`;
+    }
+    openSheet('sheet-install');
+  }
+
+  async function triggerInstall() {
+    if (deferredInstallPrompt) {
+      try {
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice?.outcome === 'accepted') {
+          deferredInstallPrompt = null;
+          updateInstallUI();
+          return;
+        }
+      } catch {}
+    }
+    openInstallGuideSheet();
+  }
+
   // --- Who Am I ---
   function renderWho() {
     const crew = appState.crew?.length ? appState.crew : DEFAULT_CREW;
     document.getElementById('who-label').textContent = currentUser;
-    document.getElementById('who-avatar').textContent = currentUser.charAt(0).toUpperCase();
+    const topAvatar = document.getElementById('who-avatar');
+    topAvatar.textContent = currentUser.charAt(0).toUpperCase();
+    topAvatar.className = `avatar-circle ${avatarClassFor(currentUser)}`;
 
     const grid = document.getElementById('who-grid');
     grid.innerHTML = '';
@@ -226,7 +434,7 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `crew-choice${person === currentUser ? ' active' : ''}`;
-      btn.innerHTML = `<div class="avatar-circle" style="width:34px;height:34px;font-size:0.85rem;">${esc(person.charAt(0).toUpperCase())}</div><span>${esc(person)}</span>`;
+      btn.innerHTML = `<div class="avatar-circle ${avatarClassFor(person)}" style="width:36px;height:36px;font-size:0.92rem;">${esc(person.charAt(0).toUpperCase())}</div><span>${esc(person)}</span>`;
       btn.addEventListener('click', () => {
         currentUser = person;
         localStorage.setItem('roadtrip_who', person);
@@ -910,6 +1118,7 @@
 
   function renderAll() {
     renderWho();
+    renderWelcome();
     renderHero();
     renderMoneyOverview();
     renderHomeVibe();
@@ -918,10 +1127,38 @@
     renderMusic();
     renderMessages();
     updateBadges();
+    updateInstallUI();
   }
 
   // --- Wire Events ---
   function bindEvents() {
+    document.getElementById('welcome-go-btn')?.addEventListener('click', completeWelcome);
+    document.getElementById('who-welcome-btn')?.addEventListener('click', showWelcomeSplash);
+    document.getElementById('install-banner-btn')?.addEventListener('click', triggerInstall);
+    document.getElementById('who-install-btn')?.addEventListener('click', () => { closeAllSheets(); triggerInstall(); });
+    document.getElementById('sheet-install-native-btn')?.addEventListener('click', async () => {
+      closeAllSheets();
+      if (deferredInstallPrompt) {
+        try { deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; } catch {}
+        deferredInstallPrompt = null;
+        updateInstallUI();
+      }
+    });
+    document.getElementById('install-banner-close')?.addEventListener('click', () => {
+      try { localStorage.setItem(A2HS_DISMISS_KEY, String(Date.now())); } catch {}
+      updateInstallUI();
+    });
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      updateInstallUI();
+    });
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      updateInstallUI();
+    });
+
     document.querySelectorAll('.nav-item').forEach((btn) => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
@@ -1029,6 +1266,9 @@
   }
 
   async function init() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
     initMap();
     bindEvents();
     updateGpsButton();
