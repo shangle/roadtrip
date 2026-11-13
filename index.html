@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roadtrip Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">🚗</div>
+        <div>
+          <div class="brand-title">Roadtrip Hub</div>
+          <div id="sync-status-pill" class="status-pill">
+            <span class="dot"></span>
+            <span id="sync-status-text">Connecting...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <div class="crew-pills" id="crew-pills" aria-label="Who are you?"></div>
+        <button id="gps-toggle-btn" class="btn btn-gps" type="button">
+          <span id="gps-btn-label">📍 Share GPS</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Always-Visible "Where Are We?" & "Are We There Yet?" Hero -->
+    <section class="hero-card">
+      <div class="hero-kicker">
+        <span>Where We Are</span>
+        <span id="hero-updated">No GPS ping yet</span>
+      </div>
+      <div class="hero-where" id="hero-where">Tap "Share GPS" to start tracking</div>
+      <div class="hero-sub" id="hero-sub">Set a destination below so everyone sees live stops &amp; time left.</div>
+
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <div class="metric-label">Time Left</div>
+          <div class="metric-val" id="m-time-left">—</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Arrival ETA</div>
+          <div class="metric-val" id="m-eta">—</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Miles Left</div>
+          <div class="metric-val" id="m-miles-left">—</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">Speed</div>
+          <div class="metric-val" id="m-speed">—</div>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+      </div>
+
+      <div id="next-stop-banner" class="next-stop-banner hidden">
+        <span id="next-stop-text">Next stop: —</span>
+        <span id="next-stop-eta">—</span>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tab-bar" role="tablist">
+      <button class="tab-btn active" data-tab="route">🗺️ Route <span class="tab-badge" id="badge-stops">0</span></button>
+      <button class="tab-btn" data-tab="split">💸 Split <span class="tab-badge" id="badge-tx">0</span></button>
+      <button class="tab-btn" data-tab="music">🎵 Music <span class="tab-badge" id="badge-queue">0</span></button>
+      <button class="tab-btn" data-tab="chat">💬 Chat <span class="tab-badge" id="badge-msgs">0</span></button>
+    </nav>
+
+    <!-- TAB 1: Route, Stops & Map -->
+    <section id="tab-route" class="tab-panel active">
+      <div class="card">
+        <div class="card-title">
+          <span>🎯 Destination &amp; Stops</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <a id="gmaps-route-link" class="btn btn-sm btn-primary hidden" target="_blank" rel="noopener">Open in Google Maps</a>
+            <a id="waze-next-link" class="btn btn-sm hidden" target="_blank" rel="noopener">Next Stop in Waze</a>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label class="muted" for="dest-input" style="display:block; margin-bottom:4px; font-weight:600;">
+            Final Destination <span id="current-dest-label" style="color:#2563eb;"></span>
+          </label>
+          <div class="input-row">
+            <input id="dest-input" class="input" type="text" placeholder="Search city, address, or landmark (e.g. Chicago, IL)">
+            <button id="dest-search-btn" class="btn btn-primary" type="button">Search</button>
+          </div>
+          <div id="dest-results" class="search-results hidden"></div>
+        </div>
+
+        <div>
+          <label class="muted" for="stop-input" style="display:block; margin-bottom:4px; font-weight:600;">
+            Add a Stop Along the Way
+          </label>
+          <div class="input-row">
+            <input id="stop-input" class="input" type="text" placeholder="Add gas, food, coffee, or sightseeing stop...">
+            <button id="stop-search-btn" class="btn btn-emerald" type="button">Find</button>
+          </div>
+          <div class="chip-row">
+            <button class="chip quick-stop-chip" type="button" data-q="coffee">☕ Coffee nearby</button>
+            <button class="chip quick-stop-chip" type="button" data-q="gas station">⛽ Gas nearby</button>
+            <button class="chip quick-stop-chip" type="button" data-q="food restaurant">🍔 Food nearby</button>
+            <button class="chip quick-stop-chip" type="button" data-q="rest area">🚻 Rest area</button>
+          </div>
+          <div id="stop-results" class="search-results hidden"></div>
+        </div>
+
+        <div id="stops-list" style="margin-top: 14px;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>📍 Live Car Map</span>
+          <div style="display:flex; gap:6px;">
+            <button id="recalc-route-btn" class="btn btn-sm" type="button">↻ Recalculate ETA</button>
+            <button id="center-map-btn" class="btn btn-sm" type="button">Center on Car</button>
+          </div>
+        </div>
+        <div id="map"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: TripSplitter -->
+    <section id="tab-split" class="tab-panel">
+      <div class="card" style="padding: 12px;">
+        <div class="card-title" style="margin-bottom:8px;">
+          <span>💸 Shared Expense Splitter</span>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span id="ts-sync-label" class="muted">Live car sync</span>
+            <a href="./tripsplitter.html" target="_blank" rel="noopener" class="btn btn-sm">Open Fullscreen ↗</a>
+          </div>
+        </div>
+        <iframe id="ts-iframe" class="ts-iframe" src="./tripsplitter.html" title="TripSplitter"></iframe>
+      </div>
+    </section>
+
+    <!-- TAB 3: Music & Car DJ -->
+    <section id="tab-music" class="tab-panel">
+      <div class="card">
+        <div class="card-title">
+          <span>🎧 Car Jukebox</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button id="play-playlist-btn" class="btn btn-sm" type="button">▶ Play Official Playlist</button>
+            <a class="btn btn-sm btn-primary" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc" target="_blank" rel="noopener">YouTube Music ↗</a>
+            <a class="btn btn-sm btn-emerald" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">+ Join YTM Collab</a>
+          </div>
+        </div>
+
+        <div class="player-frame-wrap">
+          <div id="yt-player-mount"></div>
+        </div>
+        <p class="muted" id="now-playing-label" style="margin-top:8px;">Loaded: The Ultimate Roadtrip (YouTube Music Playlist)</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span>➕ Request / Queue a Song</span></div>
+        <div class="input-row" style="margin-bottom:8px;">
+          <input id="music-search-input" class="input" type="text" placeholder="Search song/artist or paste a YouTube / YTM link...">
+          <button id="music-search-btn" class="btn btn-primary" type="button">Search</button>
+        </div>
+        <input id="music-note-input" class="input" type="text" placeholder="Optional dedication / note (e.g. For crossing into Indiana!)">
+        <div id="music-search-results" class="search-results hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>🔥 Up Next (Car DJ Queue)</span>
+        </div>
+        <div id="music-queue-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>📜 The Ultimate Roadtrip (YTM Playlist)</span>
+          <button id="refresh-playlist-btn" class="btn btn-sm" type="button">↻ Sync Tracks</button>
+        </div>
+        <div id="playlist-tracks-list"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Car Messages -->
+    <section id="tab-chat" class="tab-panel">
+      <div class="card">
+        <div class="card-title"><span>💬 Car Messages &amp; Trip Wall</span></div>
+        <div class="msg-list" id="msg-list"></div>
+
+        <div class="chip-row" style="margin-top:12px;">
+          <button class="chip quick-msg-chip" type="button">☕ Coffee stop soon?</button>
+          <button class="chip quick-msg-chip" type="button">⛽ Getting low on gas</button>
+          <button class="chip quick-msg-chip" type="button">🎶 Absolute banger</button>
+          <button class="chip quick-msg-chip" type="button">📸 Look out the window!</button>
+        </div>
+
+        <form id="msg-form" class="input-row" style="margin-top:10px;">
+          <input id="msg-input" class="input" type="text" placeholder="Drop a message, joke, or snack request..." required>
+          <button class="btn btn-primary" type="submit">Send</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

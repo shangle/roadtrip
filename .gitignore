@@ -1,0 +1,6 @@
+node_modules/
+data/
+.env
+*.log
+api-local.json
+tripsplitter_orig.html
