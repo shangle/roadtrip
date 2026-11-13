@@ -10,4 +10,4 @@ Live collaborative dashboard for **Tim, Chris, Jessica, and Nancy**:
 Double-click `start_roadtrip.bat` (or run `node launcher.js`) on this laptop. It starts:
 1. Local Node server on `http://127.0.0.1:3855`
 2. A Cloudflare Quick Tunnel (`https://*.trycloudflare.com`)
-3. Automatic Gist update so `https://shangle.me/roadtrip/` connects to your laptop automatically.
+3. Automatic Gist update so `https://dangerous.business/` connects to your laptop automatically.

@@ -44,15 +44,15 @@ function publishTunnelUrl(url) {
     console.log('\n============================================================');
     console.log(' ROADTRIP HUB IS LIVE!');
     console.log('------------------------------------------------------------');
-    console.log(` Shareable Page : https://shangle.me/roadtrip/`);
+    console.log(` Shareable Page : https://dangerous.business/`);
     console.log(` Direct Tunnel  : ${url}`);
     console.log(` Local URL      : http://127.0.0.1:${PORT}`);
-    console.log(' Discovery Gist updated — shangle.me/roadtrip/ auto-connects!');
+    console.log(' Discovery Gist updated — dangerous.business auto-connects!');
     console.log('============================================================\n');
   } catch (err) {
     console.error('Warning: failed to update discovery Gist:', err.message);
     console.log(`Direct URL still works at: ${url}`);
-    console.log(`Or open: https://shangle.me/roadtrip/?api=${encodeURIComponent(url)}`);
+    console.log(`Or open: https://dangerous.business/?api=${encodeURIComponent(url)}`);
   }
 }
 
