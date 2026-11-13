@@ -10,6 +10,10 @@ const CLOUDFLARED_PATH = fs.existsSync('C:\\Program Files (x86)\\cloudflared\\cl
   ? 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe'
   : 'cloudflared';
 const API_LOCAL_FILE = path.join(__dirname, 'api-local.json');
+const DATA_DIR = path.join(__dirname, 'data');
+const QUICK_CFG = path.join(DATA_DIR, 'quick-tunnel.yml');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(QUICK_CFG)) fs.writeFileSync(QUICK_CFG, '# Isolated config for quick tunnel\n', 'utf8');
 
 console.log('Starting Roadtrip Hub local server...');
 const serverProc = spawn(process.execPath, [path.join(__dirname, 'server.js')], {
@@ -20,7 +24,7 @@ const serverProc = spawn(process.execPath, [path.join(__dirname, 'server.js')], 
 console.log('Starting Cloudflare Quick Tunnel...');
 const tunnelProc = spawn(
   CLOUDFLARED_PATH,
-  ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${PORT}`],
+  ['tunnel', '--no-autoupdate', '--config', QUICK_CFG, '--url', `http://127.0.0.1:${PORT}`],
   { stdio: ['ignore', 'pipe', 'pipe'] }
 );
 
