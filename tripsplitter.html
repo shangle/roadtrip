@@ -4,128 +4,143 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trip Splitter</title>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- LZ-String for URL Compression -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-    
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .slide-in { animation: slideIn 0.3s ease-out forwards; }
+        :root {
+            --bg: #0A0B0F;
+            --card: #151720;
+            --card-soft: #1C1F2B;
+            --border: rgba(255, 255, 255, 0.08);
+            --lime: #C8FF3D;
+            --purple: #9D7BFF;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: #F8FAFC;
+            font-variant-numeric: tabular-nums;
+        }
+        .surface { background: var(--card); border: 1px solid var(--border); }
+        .surface-soft { background: var(--card-soft); border: 1px solid var(--border); }
+        .slide-in { animation: slideIn 0.25s ease-out forwards; }
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .no-scroll { overflow: hidden; }
         .list-item-enter { animation: slideIn 0.2s ease-out; }
+        body.embedded #ts-nav { display: none; }
     </style>
 </head>
-<body class="text-slate-800 min-h-screen pb-24">
+<body class="min-h-screen pb-28">
 
-    <!-- Header -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 py-3 flex justify-between items-center shadow-sm">
-        <div class="flex items-center gap-2">
-            <div class="bg-blue-600 text-white p-1 rounded-lg">
-                <i data-lucide="split" class="w-5 h-5"></i>
+    <!-- Header (hidden automatically when embedded inside Roadtrip app) -->
+    <nav id="ts-nav" class="bg-[#0A0B0F]/90 backdrop-blur border-b border-white/10 sticky top-0 z-10 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-[#C8FF3D] text-[#0A0B0F] flex items-center justify-center font-extrabold">
+                <i data-lucide="split" class="w-4 h-4"></i>
             </div>
-            <h1 class="font-bold text-lg tracking-tight">Trip Splitter</h1>
-            <span id="sync-badge" class="hidden text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">Car Sync</span>
+            <h1 class="font-bold text-base tracking-tight">Trip Splitter</h1>
         </div>
         <div class="flex gap-2">
-            <button onclick="openModal('people')" class="flex items-center gap-2 bg-slate-50 text-slate-600 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-slate-100 transition-colors border border-slate-200">
-                <i data-lucide="users" class="w-4 h-4"></i>
-                <span class="hidden sm:inline">People</span>
+            <button onclick="openModal('people')" class="flex items-center gap-1.5 bg-white/5 text-slate-200 px-3 py-1.5 rounded-full text-xs font-semibold hover:bg-white/10 border border-white/10">
+                <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                <span>People</span>
             </button>
-            <button onclick="shareUrl()" class="flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-blue-100 transition-colors">
-                <i data-lucide="share-2" class="w-4 h-4"></i>
-                <span class="hidden sm:inline">Share</span>
+            <button onclick="shareUrl()" class="flex items-center gap-1.5 bg-[#C8FF3D] text-[#0A0B0F] px-3 py-1.5 rounded-full text-xs font-bold">
+                <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                <span>Share</span>
             </button>
         </div>
     </nav>
 
-    <div class="max-w-md mx-auto p-4 space-y-6">
+    <div class="max-w-lg mx-auto px-4 pt-3 space-y-4">
 
-        <!-- Setup Warning (if no people) -->
-        <div id="setup-warning" class="hidden bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
-            <i data-lucide="users" class="w-8 h-8 text-yellow-500 mx-auto mb-2"></i>
-            <h3 class="font-bold text-yellow-800">No people added yet</h3>
-            <p class="text-sm text-yellow-700 mb-3">Add people to the trip to start tracking expenses.</p>
-            <button onclick="openModal('people')" class="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-yellow-700">Add People</button>
+        <!-- Setup Warning -->
+        <div id="setup-warning" class="hidden surface rounded-3xl p-6 text-center">
+            <i data-lucide="users" class="w-8 h-8 text-[#C8FF3D] mx-auto mb-2"></i>
+            <h3 class="font-bold text-white">No one in the trip yet</h3>
+            <p class="text-sm text-slate-400 mb-4">Add everyone riding together to split costs.</p>
+            <button onclick="openModal('people')" class="bg-[#C8FF3D] text-[#0A0B0F] px-5 py-2.5 rounded-full text-sm font-extrabold">Add People</button>
         </div>
 
-        <!-- Summary Cards -->
-        <div id="dashboard-content" class="space-y-6 transition-opacity duration-300">
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                    <p class="text-slate-500 text-xs font-semibold uppercase">Total Trip Cost</p>
-                    <p class="text-2xl font-bold text-slate-800" id="display-total">$0.00</p>
+        <div id="dashboard-content" class="space-y-4 transition-opacity duration-300">
+
+            <!-- Overview Balance + Spending Donut Card (Dribbble Inspired) -->
+            <div class="rounded-3xl p-5 border border-white/10" style="background: linear-gradient(145deg, #191C28 0%, #12141C 100%);">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-[11px] uppercase tracking-widest text-slate-400 font-bold">Total Trip Spent</p>
+                        <p class="text-3xl font-extrabold text-white mt-1 tracking-tight" id="display-total">$0.00</p>
+                        <p class="text-xs text-[#C8FF3D] font-semibold mt-1">
+                            <span id="display-per-person">$0.00</span> per person
+                        </p>
+                    </div>
+                    <!-- Donut Chart -->
+                    <div class="relative w-24 h-24 shrink-0 flex items-center justify-center">
+                        <svg id="spend-donut" viewBox="0 0 100 100" class="w-full h-full -rotate-90"></svg>
+                        <span class="absolute text-[10px] font-bold uppercase tracking-wider text-slate-400">Split</span>
+                    </div>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                    <p class="text-slate-500 text-xs font-semibold uppercase">Per Person</p>
-                    <p class="text-2xl font-bold text-blue-600" id="display-per-person">$0.00</p>
+
+                <!-- Quick Dual Actions -->
+                <div class="grid grid-cols-2 gap-2.5 mt-4">
+                    <button onclick="openModal('expense')" class="bg-[#C8FF3D] hover:brightness-95 text-[#0A0B0F] py-3 px-4 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Add Expense</span>
+                    </button>
+                    <button onclick="openModal('payment')" class="bg-[#9D7BFF]/20 hover:bg-[#9D7BFF]/30 text-[#D4C5FF] border border-[#9D7BFF]/30 py-3 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-transform active:scale-[0.98]">
+                        <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+                        <span>Pay Back</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- The "Plan" (Settlement) -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-                    <h2 class="font-semibold text-slate-800">Settlement Plan</h2>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">How to fix it</span>
+            <!-- Who Pays Who (Settlement Plan) -->
+            <div class="surface rounded-3xl overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-white/5 flex justify-between items-center">
+                    <h2 class="font-bold text-sm text-white">How to Settle Up</h2>
+                    <button onclick="openModal('people')" class="text-xs text-slate-400 hover:text-white font-semibold flex items-center gap-1">
+                        <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                        <span>Crew</span>
+                    </button>
                 </div>
-                <div id="settlement-plan" class="p-4 space-y-3">
-                    <p class="text-sm text-slate-400 italic">No debts found. Everyone is square!</p>
+                <div id="settlement-plan" class="p-4 space-y-2.5">
+                    <p class="text-sm text-slate-400">No debts found. Everyone is square!</p>
                 </div>
             </div>
 
-            <!-- Balance Breakdown (The Math) -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-100">
-                 <div class="px-4 py-3 border-b border-slate-100 cursor-pointer flex justify-between items-center" onclick="toggleMath()">
-                    <h2 class="font-semibold text-slate-800">Balance Sheet</h2>
-                    <div class="flex items-center gap-1 text-slate-400 text-xs hover:text-blue-600">
-                        <span>Show Math</span>
+            <!-- Balance By Person -->
+            <div class="surface rounded-3xl overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-white/5 cursor-pointer flex justify-between items-center" onclick="toggleMath()">
+                    <h2 class="font-bold text-sm text-white">Everyone's Balance</h2>
+                    <div class="flex items-center gap-1 text-slate-400 text-xs hover:text-[#C8FF3D]">
+                        <span>See Breakdown</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="math-chevron"></i>
                     </div>
                 </div>
-                <div id="math-details" class="hidden p-4 text-sm space-y-4 border-t border-slate-100 bg-slate-50"></div>
-                <div class="grid grid-cols-3 divide-x divide-slate-100 text-center py-4" id="balance-grid"></div>
+                <div class="grid grid-cols-4 divide-x divide-white/5 text-center py-3.5" id="balance-grid"></div>
+                <div id="math-details" class="hidden p-4 text-xs space-y-3 border-t border-white/5 bg-[#0F1117]"></div>
             </div>
 
-            <!-- Transactions List -->
+            <!-- Expense History -->
             <div>
-                <h3 class="font-semibold text-slate-800 mb-3 px-1">Transaction History</h3>
-                <div id="transaction-list" class="space-y-3">
-                    <div class="text-center py-8 text-slate-400">
-                        <i data-lucide="receipt" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
-                        <p>No transactions yet.</p>
-                    </div>
-                </div>
+                <h3 class="font-bold text-sm text-slate-300 mb-2.5 px-1">Recent Expenses</h3>
+                <div id="transaction-list" class="space-y-2.5"></div>
             </div>
         </div>
-
-    </div>
-
-    <!-- Floating Action Button -->
-    <div id="fabs" class="fixed bottom-6 right-6 flex flex-col gap-3 transition-transform duration-300">
-        <button onclick="openModal('payment')" class="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-4 shadow-lg flex items-center gap-2 transition-transform hover:scale-105" title="Record Payback">
-            <i data-lucide="banknote" class="w-6 h-6"></i>
-        </button>
-        <button onclick="openModal('expense')" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg flex items-center gap-2 transition-transform hover:scale-105" title="Add Expense">
-            <i data-lucide="plus" class="w-6 h-6"></i>
-        </button>
     </div>
 
     <!-- Add/Edit Expense Modal -->
-    <div id="modal-expense" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 slide-in pb-10 sm:pb-6 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold" id="expense-modal-title">New Trip Expense</h3>
-                <button onclick="closeModal('expense')" class="text-slate-400 hover:text-slate-600">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+    <div id="modal-expense" class="fixed inset-0 bg-black/75 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm">
+        <div class="bg-[#151720] border border-white/10 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 slide-in pb-10 sm:pb-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-extrabold text-white" id="expense-modal-title">Add an Expense</h3>
+                <button onclick="closeModal('expense')" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             
@@ -133,107 +148,101 @@
                 <input type="hidden" name="editId" value="">
                 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Who Paid?</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Who Paid?</label>
                     <div id="expense-payers-container" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">How much?</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount</label>
                     <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                        <input type="number" name="amount" step="0.01" min="0.01" required class="w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg" placeholder="0.00">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-bold">$</span>
+                        <input type="number" name="amount" step="0.01" min="0.01" required class="w-full pl-9 pr-4 py-3.5 bg-[#0A0B0F] border border-white/10 rounded-2xl focus:outline-none focus:border-[#C8FF3D] text-xl font-bold text-white" placeholder="0.00">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                    <input type="text" name="description" required class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Gas, Snacks, Dinner">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">What was it for?</label>
+                    <input type="text" name="description" required class="w-full px-4 py-3.5 bg-[#0A0B0F] border border-white/10 rounded-2xl focus:outline-none focus:border-[#C8FF3D] text-white" placeholder="e.g. Gas, Snacks, Hotel">
                 </div>
 
-                <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200" id="expense-submit-btn">
-                    Add Expense
+                <button type="submit" class="w-full bg-[#C8FF3D] text-[#0A0B0F] py-3.5 rounded-2xl font-extrabold hover:brightness-95 transition-all" id="expense-submit-btn">
+                    Save Expense
                 </button>
             </form>
         </div>
     </div>
 
     <!-- Record/Edit Payment Modal -->
-    <div id="modal-payment" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 slide-in pb-10 sm:pb-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold" id="payment-modal-title">Record Repayment</h3>
-                <button onclick="closeModal('payment')" class="text-slate-400 hover:text-slate-600">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+    <div id="modal-payment" class="fixed inset-0 bg-black/75 hidden z-50 flex items-end sm:items-center justify-center backdrop-blur-sm">
+        <div class="bg-[#151720] border border-white/10 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 slide-in pb-10 sm:pb-6">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-extrabold text-white" id="payment-modal-title">Record Payback</h3>
+                <button onclick="closeModal('payment')" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             
-            <form onsubmit="handlePaymentSubmit(event)" class="space-y-5" id="payment-form">
+            <form onsubmit="handlePaymentSubmit(event)" class="space-y-4" id="payment-form">
                 <input type="hidden" name="editId" value="">
-                
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex-1">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">From</label>
-                        <select name="payer" id="pay-from" class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white" onchange="preventSameSelect()"></select>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Who Paid</label>
+                        <select name="payer" id="pay-from" class="w-full px-3 py-2.5 border border-white/10 rounded-xl bg-[#0A0B0F] text-white font-semibold"></select>
                     </div>
-                    <div class="pt-6 text-slate-400">
+                    <div class="pt-5 text-slate-500">
                         <i data-lucide="arrow-right"></i>
                     </div>
                     <div class="flex-1">
-                        <label class="block text-sm font-medium text-slate-700 mb-1">To</label>
-                        <select name="payee" id="pay-to" class="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white" onchange="preventSameSelect()"></select>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Paid To</label>
+                        <select name="payee" id="pay-to" class="w-full px-3 py-2.5 border border-white/10 rounded-xl bg-[#0A0B0F] text-white font-semibold"></select>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Amount Paid</label>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Amount</label>
                     <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                        <input type="number" name="amount" step="0.01" min="0.01" required class="w-full pl-8 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg" placeholder="0.00">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-bold">$</span>
+                        <input type="number" name="amount" step="0.01" min="0.01" required class="w-full pl-9 pr-4 py-3.5 bg-[#0A0B0F] border border-white/10 rounded-2xl focus:outline-none focus:border-[#9D7BFF] text-xl font-bold text-white" placeholder="0.00">
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-200" id="payment-submit-btn">
-                    Record Payment
+                <button type="submit" class="w-full bg-[#9D7BFF] text-white py-3.5 rounded-2xl font-extrabold hover:brightness-110 transition-all" id="payment-submit-btn">
+                    Save Payback
                 </button>
             </form>
         </div>
     </div>
 
     <!-- Manage People Modal -->
-    <div id="modal-people" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-6 slide-in m-4">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">Manage People</h3>
-                <button onclick="closeModal('people')" class="text-slate-400 hover:text-slate-600">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+    <div id="modal-people" class="fixed inset-0 bg-black/75 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-[#151720] border border-white/10 w-full max-w-sm rounded-3xl p-6 slide-in m-4">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-extrabold text-white">People Splitting Costs</h3>
+                <button onclick="closeModal('people')" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
             <div class="space-y-4">
                 <div class="flex gap-2">
-                    <input type="text" id="new-person-name" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter name" onkeypress="if(event.key === 'Enter') addPerson()">
-                    <button onclick="addPerson()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700">Add</button>
+                    <input type="text" id="new-person-name" class="flex-1 bg-[#0A0B0F] border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-[#C8FF3D]" placeholder="Add name" onkeypress="if(event.key === 'Enter') addPerson()">
+                    <button onclick="addPerson()" class="bg-[#C8FF3D] text-[#0A0B0F] px-4 py-2.5 rounded-xl font-extrabold">Add</button>
                 </div>
-
                 <div id="people-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
-                
-                <p class="text-xs text-slate-400 text-center pt-2">Warning: Removing a person does not delete their historical transactions, but will exclude them from future math.</p>
             </div>
         </div>
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl opacity-0 transition-opacity pointer-events-none z-[60] text-sm font-medium flex items-center gap-2">
-        <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
-        <span id="toast-msg">Action Successful</span>
+    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-[#C8FF3D] text-[#0A0B0F] px-5 py-2.5 rounded-full shadow-2xl opacity-0 transition-opacity pointer-events-none z-[60] text-xs font-extrabold flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span id="toast-msg">Saved</span>
     </div>
 
     <script>
         const DEFAULT_CREW = ['Tim', 'Chris', 'Jessica', 'Nancy'];
-        let state = {
-            people: [...DEFAULT_CREW],
-            transactions: []
-        };
+        const DONUT_COLORS = ['#C8FF3D', '#9D7BFF', '#38BDF8', '#FB7185', '#FBBF24'];
+        let state = { people: [...DEFAULT_CREW], transactions: [] };
         let deletedIds = [];
         let pendingRemoteState = null;
 
@@ -254,12 +263,15 @@
         }
 
         function init() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('embed') === '1' || window.parent !== window) {
+                document.body.classList.add('embedded');
+            }
             loadStateFromURL();
             render();
             lucide.createIcons();
 
             if (window.parent !== window) {
-                document.getElementById('sync-badge').classList.remove('hidden');
                 window.parent.postMessage({ type: 'tripsplitter:ready', state, deletedIds }, '*');
             }
 
@@ -272,6 +284,8 @@
                 if (event.origin !== window.location.origin) return;
                 if (event.data?.type === 'tripsplitter:remote' && event.data.state) {
                     applyRemoteState(event.data.state);
+                } else if (event.data?.type === 'tripsplitter:openModal' && event.data.modal) {
+                    openModal(event.data.modal);
                 }
             });
         }
@@ -305,32 +319,19 @@
                     const decompressed = LZString.decompressFromEncodedURIComponent(hash);
                     if (decompressed) {
                         const parsed = JSON.parse(decompressed);
-                        if (parsed.transactions && !parsed.people) {
-                            state.transactions = parsed.transactions;
-                            const names = new Set();
-                            state.transactions.forEach(t => {
-                                if (t.payer) names.add(t.payer);
-                                if (t.payee) names.add(t.payee);
-                            });
-                            state.people = names.size ? Array.from(names) : [...DEFAULT_CREW];
-                        } else {
-                            state = {
-                                people: Array.isArray(parsed.people) ? parsed.people : [...DEFAULT_CREW],
-                                transactions: Array.isArray(parsed.transactions) ? parsed.transactions : []
-                            };
-                        }
+                        state = {
+                            people: Array.isArray(parsed.people) ? parsed.people : [...DEFAULT_CREW],
+                            transactions: Array.isArray(parsed.transactions) ? parsed.transactions : []
+                        };
                         return;
                     }
-                } catch (e) {
-                    console.error("Failed to load state", e);
-                }
+                } catch {}
             }
             state = { people: [...DEFAULT_CREW], transactions: [] };
         }
 
         function saveStateToURL(forcePeopleReplace = false) {
-            const json = JSON.stringify(state);
-            const compressed = LZString.compressToEncodedURIComponent(json);
+            const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(state));
             window.history.pushState(null, null, '#' + compressed);
             if (window.parent !== window) {
                 window.parent.postMessage(
@@ -345,7 +346,7 @@
             const name = input.value.trim();
             if (!name) return;
             if (state.people.includes(name)) {
-                alert('That person already exists!');
+                alert('That person is already added!');
                 return;
             }
             state.people.push(name);
@@ -357,7 +358,7 @@
         }
 
         function removePerson(name) {
-            if (confirm(`Remove ${name} from the list? Their past transactions will remain, but they won't be part of new calculations.`)) {
+            if (confirm(`Remove ${name} from future splits?`)) {
                 state.people = state.people.filter(p => p !== name);
                 saveStateToURL(true);
                 render();
@@ -372,29 +373,18 @@
             const amount = parseFloat(form.amount.value);
             const payer = form.payer.value;
             const description = form.description.value.trim();
-            if (!payer) { alert("Please select who paid."); return; }
+            if (!payer) { alert("Please tap who paid."); return; }
 
             if (editId) {
                 const index = state.transactions.findIndex(t => t.id == editId);
                 if (index !== -1) {
-                    state.transactions[index] = {
-                        ...state.transactions[index],
-                        amount, payer, description, updatedAt: Date.now()
-                    };
-                    showToast("Expense updated!");
+                    state.transactions[index] = { ...state.transactions[index], amount, payer, description, updatedAt: Date.now() };
+                    showToast("Updated!");
                 }
             } else {
                 const now = Date.now();
-                state.transactions.push({
-                    id: now,
-                    type: 'expense',
-                    payer,
-                    amount,
-                    description,
-                    date: new Date().toISOString(),
-                    updatedAt: now
-                });
-                showToast("Expense added!");
+                state.transactions.push({ id: now, type: 'expense', payer, amount, description, date: new Date().toISOString(), updatedAt: now });
+                showToast("Expense saved!");
             }
 
             saveStateToURL();
@@ -408,36 +398,24 @@
             const form = e.target;
             const editId = form.editId.value;
             if (form.payer.value === form.payee.value) {
-                alert("You cannot pay yourself!");
+                alert("Pick two different people!");
                 return;
             }
             const amount = parseFloat(form.amount.value);
             const payer = form.payer.value;
             const payee = form.payee.value;
-            const description = `Repayment: ${payer} -> ${payee}`;
+            const description = `${payer} paid back ${payee}`;
 
             if (editId) {
                 const index = state.transactions.findIndex(t => t.id == editId);
                 if (index !== -1) {
-                    state.transactions[index] = {
-                        ...state.transactions[index],
-                        amount, payer, payee, description, updatedAt: Date.now()
-                    };
-                    showToast("Payment updated!");
+                    state.transactions[index] = { ...state.transactions[index], amount, payer, payee, description, updatedAt: Date.now() };
+                    showToast("Updated!");
                 }
             } else {
                 const now = Date.now();
-                state.transactions.push({
-                    id: now,
-                    type: 'payment',
-                    payer,
-                    payee,
-                    amount,
-                    description,
-                    date: new Date().toISOString(),
-                    updatedAt: now
-                });
-                showToast("Payment recorded!");
+                state.transactions.push({ id: now, type: 'payment', payer, payee, amount, description, date: new Date().toISOString(), updatedAt: now });
+                showToast("Payback saved!");
             }
 
             saveStateToURL();
@@ -447,7 +425,7 @@
         }
 
         function deleteTransaction(id) {
-            if (confirm("Are you sure you want to delete this transaction?")) {
+            if (confirm("Delete this entry?")) {
                 state.transactions = state.transactions.filter(t => t.id !== id);
                 deletedIds.push(Number(id));
                 saveStateToURL();
@@ -458,16 +436,13 @@
         function editTransaction(id) {
             const t = state.transactions.find(tr => tr.id === id);
             if (!t) return;
-
             if (t.type === 'expense') {
                 openModal('expense');
                 const form = document.getElementById('expense-form');
                 form.editId.value = t.id;
                 form.amount.value = t.amount;
                 form.description.value = t.description;
-                form.querySelectorAll('input[name="payer"]').forEach(r => {
-                    r.checked = r.value === t.payer;
-                });
+                form.querySelectorAll('input[name="payer"]').forEach(r => { r.checked = r.value === t.payer; });
                 document.getElementById('expense-modal-title').innerText = "Edit Expense";
                 document.getElementById('expense-submit-btn').innerText = "Update Expense";
             } else if (t.type === 'payment') {
@@ -477,27 +452,22 @@
                 form.amount.value = t.amount;
                 form.payer.value = t.payer;
                 form.payee.value = t.payee;
-                document.getElementById('payment-modal-title').innerText = "Edit Repayment";
-                document.getElementById('payment-submit-btn').innerText = "Update Repayment";
+                document.getElementById('payment-modal-title').innerText = "Edit Payback";
+                document.getElementById('payment-submit-btn').innerText = "Update Payback";
             }
         }
 
         function renderPeopleList() {
             const container = document.getElementById('people-list');
             container.innerHTML = '';
-            if (state.people.length === 0) {
-                container.innerHTML = `<p class="text-sm text-slate-400 italic text-center">No people added yet.</p>`;
-                return;
-            }
             state.people.forEach(p => {
                 const row = document.createElement('div');
-                row.className = 'flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100';
+                row.className = 'flex items-center justify-between bg-[#0A0B0F] px-3.5 py-2.5 rounded-xl border border-white/10';
                 row.innerHTML = `
-                    <span class="font-medium text-slate-700">${esc(p)}</span>
-                    <button class="remove-person-btn text-slate-400 hover:text-red-500 p-1">
+                    <span class="font-semibold text-white text-sm">${esc(p)}</span>
+                    <button class="remove-person-btn text-slate-500 hover:text-rose-400 p-1">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                `;
+                    </button>`;
                 row.querySelector('.remove-person-btn').addEventListener('click', () => removePerson(p));
                 container.appendChild(row);
             });
@@ -513,34 +483,44 @@
             payTo.innerHTML = '';
 
             const activePerson = localStorage.getItem('roadtrip_who') || state.people[0];
-            let checkedDefault = false;
-
             state.people.forEach((p, index) => {
                 const shouldCheck = p === activePerson || (!state.people.includes(activePerson) && index === 0);
-                if (shouldCheck) checkedDefault = true;
                 expenseContainer.innerHTML += `
                     <label class="cursor-pointer">
                         <input type="radio" name="payer" value="${esc(p)}" class="peer sr-only" ${shouldCheck ? 'checked' : ''}>
-                        <div class="peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 border border-slate-200 rounded-lg py-2 text-center text-sm font-medium transition-all hover:bg-slate-50 overflow-hidden text-ellipsis whitespace-nowrap px-1">${esc(p)}</div>
-                    </label>
-                `;
+                        <div class="peer-checked:bg-[#C8FF3D] peer-checked:text-[#0A0B0F] peer-checked:border-[#C8FF3D] bg-[#0A0B0F] border border-white/10 text-slate-300 rounded-xl py-2.5 text-center text-sm font-bold transition-all truncate px-1">${esc(p)}</div>
+                    </label>`;
                 const opt1 = document.createElement('option');
-                opt1.value = p;
-                opt1.text = p;
+                opt1.value = p; opt1.text = p;
                 payFrom.appendChild(opt1);
 
                 const opt2 = document.createElement('option');
-                opt2.value = p;
-                opt2.text = p;
+                opt2.value = p; opt2.text = p;
                 payTo.appendChild(opt2);
             });
+            if (state.people.length >= 2) payTo.value = state.people[1];
+        }
 
-            if (!checkedDefault && expenseContainer.querySelector('input[name="payer"]')) {
-                expenseContainer.querySelector('input[name="payer"]').checked = true;
+        function renderDonut(stats, totalTripCost) {
+            const svg = document.getElementById('spend-donut');
+            const r = 38;
+            const circ = 2 * Math.PI * r;
+            if (totalTripCost <= 0) {
+                svg.innerHTML = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12" />`;
+                return;
             }
-            if (state.people.length >= 2) {
-                payTo.value = state.people[1];
-            }
+            let offset = 0;
+            let markup = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12" />`;
+            state.people.forEach((name, idx) => {
+                const paid = stats[name]?.paid || 0;
+                if (paid <= 0) return;
+                const frac = paid / totalTripCost;
+                const dash = frac * circ;
+                const color = DONUT_COLORS[idx % DONUT_COLORS.length];
+                markup += `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${Math.max(2, dash - 2)} ${circ}" stroke-dashoffset="${-offset}" />`;
+                offset += dash;
+            });
+            svg.innerHTML = markup;
         }
 
         function render() {
@@ -552,17 +532,14 @@
             const mathDetails = document.getElementById('math-details');
             const setupWarning = document.getElementById('setup-warning');
             const dashboardContent = document.getElementById('dashboard-content');
-            const fabs = document.getElementById('fabs');
 
             if (state.people.length === 0) {
                 setupWarning.classList.remove('hidden');
                 dashboardContent.classList.add('opacity-50', 'pointer-events-none');
-                fabs.classList.add('hidden');
                 return;
             }
             setupWarning.classList.add('hidden');
             dashboardContent.classList.remove('opacity-50', 'pointer-events-none');
-            fabs.classList.remove('hidden');
 
             let totalTripCost = 0;
             const stats = {};
@@ -572,10 +549,9 @@
             listContainer.innerHTML = '';
             if (sortedTransactions.length === 0) {
                 listContainer.innerHTML = `
-                    <div class="text-center py-10 bg-white rounded-xl border border-slate-100 border-dashed">
-                        <i data-lucide="receipt" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
-                        <p class="text-slate-400">No transactions yet.</p>
-                        <p class="text-xs text-slate-400 mt-1">Add an expense or payment to start.</p>
+                    <div class="surface text-center py-8 rounded-3xl border-dashed">
+                        <p class="text-slate-400 text-sm font-medium">No expenses yet</p>
+                        <p class="text-xs text-slate-500 mt-1">Tap "Add Expense" above when someone pays for gas or food.</p>
                     </div>`;
             }
 
@@ -593,36 +569,35 @@
                 }
 
                 const isExpense = t.type === 'expense';
-                const colorClass = isExpense ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700';
-                const icon = isExpense ? 'credit-card' : 'arrow-right-left';
+                const badgeCls = isExpense ? 'bg-[#C8FF3D]/15 text-[#C8FF3D]' : 'bg-[#9D7BFF]/20 text-[#D4C5FF]';
+                const icon = isExpense ? 'receipt' : 'arrow-right-left';
                 const item = document.createElement('div');
-                item.className = 'list-item-enter bg-white p-3 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm';
+                item.className = 'list-item-enter surface p-3.5 rounded-2xl flex items-center justify-between gap-3';
                 item.innerHTML = `
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <div class="w-10 h-10 rounded-full ${colorClass} flex items-center justify-center shrink-0">
-                            <i data-lucide="${icon}" class="w-5 h-5"></i>
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-2xl ${badgeCls} flex items-center justify-center shrink-0">
+                            <i data-lucide="${icon}" class="w-4 h-4"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-semibold text-sm text-slate-800 truncate">${esc(t.description)}</p>
-                            <p class="text-xs text-slate-500 truncate">
+                            <p class="font-bold text-sm text-white truncate">${esc(t.description)}</p>
+                            <p class="text-xs text-slate-400 truncate">
                                 ${isExpense
-                                    ? `<span class="font-medium text-slate-700">${esc(t.payer)}</span> paid`
-                                    : `<span class="font-medium text-slate-700">${esc(t.payer)}</span> sent to <span class="font-medium text-slate-700">${esc(t.payee)}</span>`}
+                                    ? `Paid by <span class="text-slate-200 font-semibold">${esc(t.payer)}</span>`
+                                    : `<span class="text-slate-200 font-semibold">${esc(t.payer)}</span> → <span class="text-slate-200 font-semibold">${esc(t.payee)}</span>`}
                             </p>
                         </div>
                     </div>
                     <div class="text-right shrink-0">
-                        <p class="font-bold text-slate-800">$${Number(t.amount).toFixed(2)}</p>
-                        <div class="flex items-center justify-end gap-2 mt-1">
-                            <button onclick="editTransaction(${Number(t.id)})" class="text-slate-300 hover:text-blue-500" title="Edit">
-                                <i data-lucide="pencil" class="w-3 h-3"></i>
+                        <p class="font-extrabold text-sm text-white">$${Number(t.amount).toFixed(2)}</p>
+                        <div class="flex items-center justify-end gap-2.5 mt-1">
+                            <button onclick="editTransaction(${Number(t.id)})" class="text-slate-500 hover:text-[#C8FF3D]" title="Edit">
+                                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button onclick="deleteTransaction(${Number(t.id)})" class="text-slate-300 hover:text-red-500" title="Delete">
-                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                            <button onclick="deleteTransaction(${Number(t.id)})" class="text-slate-500 hover:text-rose-400" title="Delete">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 listContainer.appendChild(item);
             });
 
@@ -630,47 +605,37 @@
             const perPersonShare = count > 0 ? totalTripCost / count : 0;
             totalDisplay.innerText = `$${totalTripCost.toFixed(2)}`;
             perPersonDisplay.innerText = `$${perPersonShare.toFixed(2)}`;
+            renderDonut(stats, totalTripCost);
 
             const balances = [];
-            let mathHtml = `<div class="space-y-4">
-                <div class="pb-2 border-b border-slate-200">
-                    <p>Total Cost: <strong>$${totalTripCost.toFixed(2)}</strong></p>
-                    <p>Split ${count} ways: <strong>$${perPersonShare.toFixed(2)}</strong> / person</p>
-                </div>`;
-
+            let mathHtml = `<div class="space-y-3"><div class="pb-2 border-b border-white/10 text-slate-300">Total: <strong>$${totalTripCost.toFixed(2)}</strong> · Fair share: <strong>$${perPersonShare.toFixed(2)} each</strong></div>`;
             state.people.forEach(name => {
                 const s = stats[name];
                 const netBalance = (s.paid - perPersonShare) + (s.sent - s.received);
                 balances.push({ name, amount: netBalance });
-                const status = netBalance >= 0 ? 'should receive' : 'needs to pay';
+                const status = netBalance >= 0 ? 'gets back' : 'owes';
                 mathHtml += `
-                    <div>
-                        <p class="font-bold text-slate-800">${esc(name)}</p>
-                        <ul class="text-xs text-slate-500 list-disc pl-4 mt-1 space-y-0.5">
-                            <li>Paid for group: $${s.paid.toFixed(2)}</li>
-                            <li>Fair share: -$${perPersonShare.toFixed(2)}</li>
-                            <li>Sent direct: +$${s.sent.toFixed(2)}</li>
-                            <li>Received direct: -$${s.received.toFixed(2)}</li>
-                            <li><strong>Net: $${netBalance.toFixed(2)} (${status})</strong></li>
-                        </ul>
+                    <div class="flex justify-between items-center text-slate-300">
+                        <span><strong>${esc(name)}</strong> (paid $${s.paid.toFixed(0)})</span>
+                        <span class="${netBalance >= 0 ? 'text-[#C8FF3D]' : 'text-rose-400'} font-bold">${status} $${Math.abs(netBalance).toFixed(2)}</span>
                     </div>`;
             });
             mathHtml += `</div>`;
             mathDetails.innerHTML = mathHtml;
 
             const cols = Math.min(4, count);
-            balanceGrid.className = `grid grid-cols-${cols} divide-x divide-slate-100 text-center py-4`;
+            balanceGrid.className = `grid grid-cols-${cols} divide-x divide-white/5 text-center py-3.5`;
             balanceGrid.innerHTML = '';
             balances.forEach(b => {
-                const isPositive = b.amount >= 0.01;
-                const isNegative = b.amount <= -0.01;
-                const color = isPositive ? 'text-green-600' : (isNegative ? 'text-red-500' : 'text-slate-400');
-                const label = isPositive ? 'Gets back' : (isNegative ? 'Owes' : 'Settled');
+                const isPos = b.amount >= 0.01;
+                const isNeg = b.amount <= -0.01;
+                const color = isPos ? 'text-[#C8FF3D]' : (isNeg ? 'text-rose-400' : 'text-slate-400');
+                const label = isPos ? 'Gets back' : (isNeg ? 'Owes' : 'Even');
                 balanceGrid.innerHTML += `
                     <div class="px-1">
-                        <p class="font-medium text-slate-600 text-sm truncate">${esc(b.name)}</p>
-                        <p class="text-[10px] text-slate-400 uppercase tracking-wider mt-1 mb-0.5">${label}</p>
-                        <p class="font-bold ${color}">${Math.abs(b.amount).toFixed(2)}</p>
+                        <p class="font-bold text-slate-200 text-xs truncate">${esc(b.name)}</p>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-wider mt-1">${label}</p>
+                        <p class="font-extrabold text-sm mt-0.5 ${color}">$${Math.abs(b.amount).toFixed(0)}</p>
                     </div>`;
             });
 
@@ -679,24 +644,23 @@
             settlementContainer.innerHTML = '';
 
             if (debtors.length === 0 && creditors.length === 0) {
-                settlementContainer.innerHTML = `<div class="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg"><i data-lucide="check" class="w-4 h-4"></i> <span class="font-medium">All settled up!</span></div>`;
+                settlementContainer.innerHTML = `<div class="flex items-center gap-2 text-[#C8FF3D] bg-[#C8FF3D]/10 border border-[#C8FF3D]/20 p-3 rounded-2xl text-sm font-bold"><i data-lucide="check-circle" class="w-4 h-4"></i> <span>Everyone is all squared up!</span></div>`;
             }
 
-            let dIndex = 0;
-            let cIndex = 0;
+            let dIndex = 0, cIndex = 0;
             while (dIndex < debtors.length && cIndex < creditors.length) {
                 const debtor = debtors[dIndex];
                 const creditor = creditors[cIndex];
                 const amount = Math.min(Math.abs(debtor.amount), creditor.amount);
-                if (amount > 0.00) {
+                if (amount > 0) {
                     settlementContainer.innerHTML += `
-                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-red-500">${esc(debtor.name)}</span>
+                        <div class="flex items-center justify-between p-3 surface-soft rounded-2xl">
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="font-bold text-rose-400">${esc(debtor.name)}</span>
                                 <span class="text-slate-400 text-xs">pays</span>
-                                <span class="font-bold text-green-600">${esc(creditor.name)}</span>
+                                <span class="font-bold text-[#C8FF3D]">${esc(creditor.name)}</span>
                             </div>
-                            <span class="font-bold text-slate-800">$${amount.toFixed(2)}</span>
+                            <span class="font-extrabold text-white text-sm">$${amount.toFixed(2)}</span>
                         </div>`;
                 }
                 debtor.amount += amount;
@@ -709,22 +673,18 @@
         }
 
         function openModal(type) {
-            if (type === 'expense' || type === 'payment') {
-                populateModalInputs();
-            }
-            if (type === 'people') {
-                renderPeopleList();
-            }
+            if (type === 'expense' || type === 'payment') populateModalInputs();
+            if (type === 'people') renderPeopleList();
             if (type === 'expense') {
-                document.getElementById('expense-modal-title').innerText = "New Trip Expense";
-                document.getElementById('expense-submit-btn').innerText = "Add Expense";
+                document.getElementById('expense-modal-title').innerText = "Add an Expense";
+                document.getElementById('expense-submit-btn').innerText = "Save Expense";
                 document.getElementById('expense-form').editId.value = "";
                 document.getElementById('expense-form').reset();
                 populateModalInputs();
             }
             if (type === 'payment') {
-                document.getElementById('payment-modal-title').innerText = "Record Repayment";
-                document.getElementById('payment-submit-btn').innerText = "Record Payment";
+                document.getElementById('payment-modal-title').innerText = "Record Payback";
+                document.getElementById('payment-submit-btn').innerText = "Save Payback";
                 document.getElementById('payment-form').editId.value = "";
                 document.getElementById('payment-form').reset();
                 populateModalInputs();
@@ -746,35 +706,20 @@
         function toggleMath() {
             const el = document.getElementById('math-details');
             const chev = document.getElementById('math-chevron');
-            if (el.classList.contains('hidden')) {
-                el.classList.remove('hidden');
-                chev.style.transform = 'rotate(180deg)';
-            } else {
-                el.classList.add('hidden');
-                chev.style.transform = 'rotate(0deg)';
-            }
+            el.classList.toggle('hidden');
+            chev.style.transform = el.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
         }
-
-        function preventSameSelect() {}
 
         function shareUrl() {
             saveStateToURL();
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                showToast("URL copied to clipboard!");
-            }).catch(() => {
-                showToast("Could not copy URL manually");
-            });
+            navigator.clipboard.writeText(window.location.href).then(() => showToast("Link copied!"));
         }
 
         function showToast(msg) {
             const toast = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             toast.style.opacity = '1';
-            toast.style.transform = 'translate(-50%, 0)';
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translate(-50%, -10px)';
-            }, 2500);
+            setTimeout(() => { toast.style.opacity = '0'; }, 2200);
         }
 
         window.onclick = function(event) {

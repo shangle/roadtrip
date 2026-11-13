@@ -734,28 +734,57 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && pathname === '/api/geo/search') {
       const q = (u.searchParams.get('q') || '').trim();
-      const lat = u.searchParams.get('lat');
-      const lon = u.searchParams.get('lon');
+      const latNum = Number(u.searchParams.get('lat'));
+      const lonNum = Number(u.searchParams.get('lon'));
+      const hasCoords = u.searchParams.get('lat') != null && Number.isFinite(latNum) && Number.isFinite(lonNum);
+      const isNearby = u.searchParams.get('nearby') === '1' && hasCoords;
       if (!q) return sendJson(res, 200, { results: [] });
 
-      let apiUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6`;
-      if (lat && lon && Number.isFinite(Number(lat)) && Number.isFinite(Number(lon))) {
-        apiUrl += `&lat=${Number(lat)}&lon=${Number(lon)}`;
+      let results = [];
+      if (isNearby) {
+        const viewbox = `${lonNum - 0.4},${latNum + 0.4},${lonNum + 0.4},${latNum - 0.4}`;
+        const nUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&viewbox=${viewbox}&bounded=1&limit=8`;
+        const nRes = await fetch(nUrl, {
+          headers: { 'User-Agent': 'RoadtripHub/1.0' },
+          signal: AbortSignal.timeout(5500),
+        });
+        const nData = await nRes.json();
+        results = (Array.isArray(nData) ? nData : []).map((item) => {
+          const rLat = Number(item.lat);
+          const rLon = Number(item.lon);
+          const shortParts = String(item.display_name || '').split(',').map((s) => s.trim()).filter(Boolean);
+          const name = item.name || shortParts[0] || q;
+          const label = shortParts.slice(0, 3).join(', ');
+          return {
+            name,
+            label,
+            lat: rLat,
+            lon: rLon,
+            distanceMeters: Math.round(haversineMeters(latNum, lonNum, rLat, rLon)),
+          };
+        });
+        results.sort((a, b) => (a.distanceMeters || 0) - (b.distanceMeters || 0));
+      } else {
+        let apiUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6`;
+        if (hasCoords) apiUrl += `&lat=${latNum}&lon=${lonNum}`;
+        const pRes = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) });
+        const pData = await pRes.json();
+        results = (pData.features || []).map((f) => {
+          const p = f.properties || {};
+          const rLat = f.geometry.coordinates[1];
+          const rLon = f.geometry.coordinates[0];
+          const parts = [p.name, p.city || p.town || p.village, p.state].filter(Boolean);
+          const dedupParts = parts.filter((v, i) => parts.indexOf(v) === i);
+          return {
+            name: p.name || dedupParts[0] || q,
+            label: dedupParts.join(', '),
+            lat: rLat,
+            lon: rLon,
+            distanceMeters: hasCoords ? Math.round(haversineMeters(latNum, lonNum, rLat, rLon)) : null,
+          };
+        });
       }
-      const pRes = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) });
-      const pData = await pRes.json();
-      const results = (pData.features || []).map((f) => {
-        const p = f.properties || {};
-        const parts = [p.name, p.city || p.town || p.village, p.state].filter(Boolean);
-        const dedupParts = parts.filter((v, i) => parts.indexOf(v) === i);
-        return {
-          name: p.name || dedupParts[0] || q,
-          label: dedupParts.join(', '),
-          lat: f.geometry.coordinates[1],
-          lon: f.geometry.coordinates[0],
-        };
-      });
-      return sendJson(res, 200, { results });
+      return sendJson(res, 200, { results: results.slice(0, 6) });
     }
 
     if (req.method === 'POST' && pathname === '/api/location') {

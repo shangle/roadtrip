@@ -4,7 +4,8 @@
   const DISCOVERY_GIST_ID = '2d2eaaf5efd625d4d670877c48922751';
   const PLAYLIST_ID = 'PLO6qnlYSFTDc';
   const DEFAULT_CREW = ['Tim', 'Chris', 'Jessica', 'Nancy'];
-  const LOCAL_STORAGE_KEY = 'roadtrip_hub_offline_state_v1';
+  const DONUT_COLORS = ['#C8FF3D', '#9D7BFF', '#38BDF8', '#FB7185', '#FBBF24'];
+  const LOCAL_STORAGE_KEY = 'roadtrip_hub_offline_state_v2';
 
   let apiBase = null;
   let eventSource = null;
@@ -17,7 +18,7 @@
 
   let appState = loadLocalState();
 
-  // Map state
+  // Map
   let map = null;
   let carMarker = null;
   let destMarker = null;
@@ -26,7 +27,7 @@
   let trailLayer = null;
   let hasCenteredMap = false;
 
-  // YouTube Player state
+  // YouTube Player
   let ytPlayer = null;
   let ytReady = false;
   let activeLoadedVideoId = null;
@@ -40,44 +41,24 @@
       crew: [...DEFAULT_CREW],
       trip: { title: 'The Ultimate Roadtrip', origin: null, destination: null, stops: [], route: null },
       location: {
-        lat: null,
-        lon: null,
-        speedMph: 0,
-        updatedAt: null,
-        reportedBy: null,
-        whereAreWe: 'Tap "Share GPS" to start tracking',
-        remainingMeters: null,
-        remainingSec: null,
-        progressPct: null,
-        nextStop: null,
-        stopEtas: {},
-        trail: [],
+        lat: null, lon: null, speedMph: 0, updatedAt: null, reportedBy: null,
+        whereAreWe: 'Tap "Share Location" above to start',
+        remainingMeters: null, remainingSec: null, progressPct: null, nextStop: null, stopEtas: {}, trail: [],
       },
       tripsplitter: { people: [...DEFAULT_CREW], transactions: [], deletedIds: [] },
-      music: {
-        playlistId: PLAYLIST_ID,
-        playlistTitle: 'The Ultimate Roadtrip',
-        playlistTracks: [],
-        queue: [],
-        nowPlayingVideoId: null,
-      },
+      music: { playlistId: PLAYLIST_ID, playlistTitle: 'Dangerous.Business', playlistTracks: [], queue: [], nowPlayingVideoId: null },
       messages: [],
     };
   }
 
   function saveLocalState() {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appState));
-    } catch {}
+    try { localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(appState)); } catch {}
   }
 
   function esc(str) {
     return String(str ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function formatDuration(sec) {
@@ -96,17 +77,16 @@
 
   function formatEtaClock(sec) {
     if (sec == null || !Number.isFinite(sec)) return '—';
-    const arrival = new Date(Date.now() + sec * 1000);
-    return arrival.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return new Date(Date.now() + sec * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
   function formatAgo(iso) {
-    if (!iso) return 'No ping yet';
+    if (!iso) return 'Waiting for GPS update';
     const diff = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
-    if (diff < 15) return 'Just now';
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 15) return 'Updated just now';
+    if (diff < 60) return `Updated ${diff}s ago`;
+    if (diff < 3600) return `Updated ${Math.floor(diff / 60)}m ago`;
+    return `Updated ${Math.floor(diff / 3600)}h ago`;
   }
 
   function haversineMeters(lat1, lon1, lat2, lon2) {
@@ -114,45 +94,50 @@
     const toRad = (d) => (d * Math.PI) / 180;
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
-  // --- API Discovery & Connection ---
+  // --- Navigation & Sheets ---
+  function switchTab(tabName) {
+    document.querySelectorAll('.nav-item').forEach((b) => b.classList.toggle('active', b.dataset.tab === tabName));
+    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${tabName}`));
+    if (tabName === 'stops' && map) {
+      setTimeout(() => map.invalidateSize(), 60);
+    }
+  }
+
+  function openSheet(id) {
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  function closeAllSheets() {
+    document.querySelectorAll('.sheet-backdrop').forEach((el) => el.classList.add('hidden'));
+  }
+
+  // --- API Discovery ---
   async function checkApiHealth(base) {
     try {
-      const res = await fetch(`${base.replace(/\/$/, '')}/api/health`, {
-        signal: AbortSignal.timeout(3500),
-      });
+      const res = await fetch(`${base.replace(/\/$/, '')}/api/health`, { signal: AbortSignal.timeout(3500) });
       return res.ok;
-    } catch {
-      return false;
-    }
+    } catch { return false; }
   }
 
   async function discoverApiBase() {
     const params = new URLSearchParams(window.location.search);
     const override = params.get('api');
-    if (override && /^https?:\/\//i.test(override)) {
-      if (await checkApiHealth(override)) return override.replace(/\/$/, '');
+    if (override && /^https?:\/\//i.test(override) && (await checkApiHealth(override))) {
+      return override.replace(/\/$/, '');
     }
-
     const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.trycloudflare.com')) {
-      if (await checkApiHealth(window.location.origin)) return window.location.origin;
+    if ((host === 'localhost' || host === '127.0.0.1' || host.endsWith('.trycloudflare.com')) && (await checkApiHealth(window.location.origin))) {
+      return window.location.origin;
     }
-
-    // Check cached discovered tunnel URL first
     const cached = sessionStorage.getItem('roadtrip_api_base');
     if (cached && (await checkApiHealth(cached))) return cached;
 
-    // Fetch live tunnel URL from discovery Gist
     try {
-      const gistRes = await fetch(`https://api.github.com/gists/${DISCOVERY_GIST_ID}?t=${Date.now()}`, {
-        signal: AbortSignal.timeout(4500),
-      });
+      const gistRes = await fetch(`https://api.github.com/gists/${DISCOVERY_GIST_ID}?t=${Date.now()}`, { signal: AbortSignal.timeout(4500) });
       if (gistRes.ok) {
         const gist = await gistRes.json();
         const rawContent = gist.files?.['api-local.json']?.content;
@@ -166,19 +151,11 @@
         }
       }
     } catch {}
-
     return null;
   }
 
-  function setSyncPill(isLive, label) {
-    const pill = document.getElementById('sync-status-pill');
-    const txt = document.getElementById('sync-status-text');
-    pill.classList.toggle('live', isLive);
-    txt.textContent = label;
-  }
-
   async function apiFetch(path, options = {}) {
-    if (!apiBase) throw new Error('Offline mode');
+    if (!apiBase) throw new Error('Offline');
     const res = await fetch(`${apiBase}${path}`, {
       ...options,
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
@@ -187,24 +164,21 @@
     return res.json();
   }
 
+  function setOnlineStatus(online) {
+    document.getElementById('offline-dot').classList.toggle('hidden', online);
+  }
+
   function connectSSE() {
     if (!apiBase) return;
-    if (eventSource) {
-      try { eventSource.close(); } catch {}
-    }
+    if (eventSource) { try { eventSource.close(); } catch {} }
     eventSource = new EventSource(`${apiBase}/api/events`);
-
-    eventSource.addEventListener('open', () => {
-      setSyncPill(true, 'Laptop Live Sync');
-    });
-
+    eventSource.addEventListener('open', () => setOnlineStatus(true));
     eventSource.addEventListener('state', (e) => {
       appState = JSON.parse(e.data);
       saveLocalState();
       renderAll();
       pushStateToTripSplitter();
     });
-
     eventSource.addEventListener('location', (e) => {
       appState.location = JSON.parse(e.data);
       saveLocalState();
@@ -212,53 +186,57 @@
       renderStops();
       updateMap();
     });
-
     eventSource.addEventListener('tripsplitter', (e) => {
       appState.tripsplitter = JSON.parse(e.data);
       saveLocalState();
+      renderMoneyOverview();
       updateBadges();
       pushStateToTripSplitter();
     });
-
     eventSource.addEventListener('music', (e) => {
       const prevNow = appState.music?.nowPlayingVideoId;
       appState.music = JSON.parse(e.data);
       saveLocalState();
       renderMusic();
+      renderHomeVibe();
+      updateBadges();
       if (appState.music.nowPlayingVideoId && appState.music.nowPlayingVideoId !== prevNow) {
         playVideoInEmbed(appState.music.nowPlayingVideoId);
       }
     });
-
     eventSource.addEventListener('messages', (e) => {
       appState.messages = JSON.parse(e.data);
       saveLocalState();
       renderMessages();
+      renderHomeVibe();
+      updateBadges();
     });
-
-    eventSource.onerror = () => {
-      setSyncPill(false, 'Reconnecting...');
-    };
+    eventSource.onerror = () => setOnlineStatus(false);
   }
 
-  // --- Crew Selection ---
-  function renderCrewPills() {
+  // --- Who Am I ---
+  function renderWho() {
     const crew = appState.crew?.length ? appState.crew : DEFAULT_CREW;
-    const container = document.getElementById('crew-pills');
-    container.innerHTML = '';
-    for (const person of crew) {
+    document.getElementById('who-label').textContent = currentUser;
+    document.getElementById('who-avatar').textContent = currentUser.charAt(0).toUpperCase();
+
+    const grid = document.getElementById('who-grid');
+    grid.innerHTML = '';
+    crew.forEach((person) => {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = `crew-pill${person === currentUser ? ' active' : ''}`;
-      btn.textContent = person;
+      btn.className = `crew-choice${person === currentUser ? ' active' : ''}`;
+      btn.innerHTML = `<div class="avatar-circle" style="width:34px;height:34px;font-size:0.85rem;">${esc(person.charAt(0).toUpperCase())}</div><span>${esc(person)}</span>`;
       btn.addEventListener('click', () => {
         currentUser = person;
         localStorage.setItem('roadtrip_who', person);
-        renderCrewPills();
+        renderWho();
+        renderMoneyOverview();
         renderMessages();
+        closeAllSheets();
       });
-      container.appendChild(btn);
-    }
+      grid.appendChild(btn);
+    });
   }
 
   // --- GPS Sharing ---
@@ -266,16 +244,13 @@
     const btn = document.getElementById('gps-toggle-btn');
     const label = document.getElementById('gps-btn-label');
     btn.classList.toggle('active', gpsEnabled);
-    label.textContent = gpsEnabled ? '📡 Sharing GPS' : '📍 Share GPS';
+    label.textContent = gpsEnabled ? 'Sharing GPS' : 'Share Location';
   }
 
   async function handleGpsPosition(pos) {
     const { latitude: lat, longitude: lon, speed, accuracy, heading } = pos.coords;
     const now = Date.now();
-    const moved = lastGpsSentCoords
-      ? haversineMeters(lastGpsSentCoords.lat, lastGpsSentCoords.lon, lat, lon)
-      : Infinity;
-
+    const moved = lastGpsSentCoords ? haversineMeters(lastGpsSentCoords.lat, lastGpsSentCoords.lon, lat, lon) : Infinity;
     if (now - lastGpsSentAt < 10000 && moved < 250) return;
     lastGpsSentAt = now;
     lastGpsSentCoords = { lat, lon };
@@ -297,30 +272,24 @@
       } catch {}
     }
 
-    // Standalone local fallback (when laptop is unreachable)
+    // Standalone fallback
     appState.location.lat = lat;
     appState.location.lon = lon;
     appState.location.speedMph = Number.isFinite(speed) && speed >= 0 ? Math.round(speed * 2.23694) : 0;
     appState.location.reportedBy = currentUser;
     appState.location.updatedAt = new Date().toISOString();
 
-    const movedGeo = localGeocodeCache.lat == null
-      ? Infinity
-      : haversineMeters(localGeocodeCache.lat, localGeocodeCache.lon, lat, lon);
+    const movedGeo = localGeocodeCache.lat == null ? Infinity : haversineMeters(localGeocodeCache.lat, localGeocodeCache.lon, lat, lon);
     if (now - localGeocodeCache.at > 45000 || movedGeo > 1500) {
       localGeocodeCache = { at: now, lat, lon };
       try {
-        const b = await fetch(
-          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
-        ).then((r) => r.json());
+        const b = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`).then((r) => r.json());
         const rawCity = b.city || b.locality;
         const city = rawCity ? rawCity.replace(/^(Charter\s+)?Township\s+of\s+/i, '').replace(/^(City|Village|Town)\s+of\s+/i, '').trim() : null;
         const reg = b.principalSubdivisionCode ? b.principalSubdivisionCode.replace(/^US-/, '') : b.principalSubdivision;
         appState.location.whereAreWe = city ? `Near ${city}${reg ? ', ' + reg : ''}` : `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
       } catch {}
-      if (appState.trip.destination) {
-        await computeOfflineEta(lat, lon);
-      }
+      if (appState.trip.destination) await computeOfflineEta(lat, lon);
     }
     saveLocalState();
     renderHero();
@@ -332,25 +301,19 @@
       const activeStops = (appState.trip.stops || []).filter((s) => !s.reached);
       const pts = [{ lat, lon }, ...activeStops, appState.trip.destination];
       const coordStr = pts.map((p) => `${p.lon},${p.lat}`).join(';');
-      const r = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`
-      ).then((x) => x.json());
+      const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`).then((x) => x.json());
       const route = r.routes?.[0];
       if (route) {
         appState.location.remainingMeters = Math.round(route.distance);
         appState.location.remainingSec = Math.round(route.duration);
-        appState.trip.route = {
-          totalMeters: route.distance,
-          totalSec: route.duration,
-          geometry: route.geometry?.coordinates || [],
-        };
+        appState.trip.route = { totalMeters: route.distance, totalSec: route.duration, geometry: route.geometry?.coordinates || [] };
       }
     } catch {}
   }
 
   function startGps() {
     if (!('geolocation' in navigator)) {
-      alert('Geolocation is not supported in this browser.');
+      alert('Location is not supported in this browser.');
       return;
     }
     gpsEnabled = true;
@@ -360,12 +323,11 @@
     gpsWatchId = navigator.geolocation.watchPosition(
       handleGpsPosition,
       (err) => {
-        console.warn('GPS error:', err.message);
         if (err.code === 1) {
           gpsEnabled = false;
           localStorage.setItem('roadtrip_gps_on', '0');
           updateGpsButton();
-          alert('Location permission was denied. Enable location access to share live car GPS.');
+          alert('Please allow location access in your browser so everyone can see where we are.');
         }
       },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
@@ -376,24 +338,19 @@
     gpsEnabled = false;
     localStorage.setItem('roadtrip_gps_on', '0');
     updateGpsButton();
-    if (gpsWatchId != null) {
-      navigator.geolocation.clearWatch(gpsWatchId);
-      gpsWatchId = null;
-    }
+    if (gpsWatchId != null) { navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
   }
 
-  // --- Place Search & Route Actions ---
-  async function searchPlaces(query) {
+  // --- Place Search & Route ---
+  async function searchPlaces(query, nearby = false) {
     if (!query.trim()) return [];
     const lat = appState.location?.lat;
     const lon = appState.location?.lon;
     if (apiBase) {
       try {
         const qs = new URLSearchParams({ q: query });
-        if (lat != null && lon != null) {
-          qs.set('lat', String(lat));
-          qs.set('lon', String(lon));
-        }
+        if (lat != null && lon != null) { qs.set('lat', String(lat)); qs.set('lon', String(lon)); }
+        if (nearby) qs.set('nearby', '1');
         const data = await apiFetch(`/api/geo/search?${qs.toString()}`);
         return data.results || [];
       } catch {}
@@ -405,8 +362,39 @@
       const p = f.properties || {};
       const parts = [p.name, p.city || p.town || p.village, p.state].filter(Boolean);
       const dedup = parts.filter((v, i) => parts.indexOf(v) === i);
-      return { name: p.name || dedup[0] || query, label: dedup.join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+      const rLat = f.geometry.coordinates[1];
+      const rLon = f.geometry.coordinates[0];
+      return {
+        name: p.name || dedup[0] || query,
+        label: dedup.join(', '),
+        lat: rLat,
+        lon: rLon,
+        distanceMeters: lat != null ? Math.round(haversineMeters(lat, lon, rLat, rLon)) : null,
+      };
     });
+  }
+
+  function renderPlaceSearchResults(containerId, results, actionLabel, onPick) {
+    const box = document.getElementById(containerId);
+    box.innerHTML = '';
+    if (!results.length) {
+      box.innerHTML = `<div style="padding:12px 14px;" class="muted">No places found nearby. Try another search.</div>`;
+      box.classList.remove('hidden');
+      return;
+    }
+    results.forEach((r) => {
+      const distStr = r.distanceMeters != null ? ` • ${formatMiles(r.distanceMeters)} away` : '';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'search-item';
+      btn.innerHTML = `<div style="min-width:0;"><div style="font-weight:700;font-size:0.9rem;">${esc(r.name)}</div><div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.label)}${esc(distStr)}</div></div><span class="btn btn-sm btn-lime">${esc(actionLabel)}</span>`;
+      btn.addEventListener('click', () => {
+        box.classList.add('hidden');
+        onPick(r);
+      });
+      box.appendChild(btn);
+    });
+    box.classList.remove('hidden');
   }
 
   async function sendRouteAction(payload) {
@@ -420,73 +408,115 @@
         return;
       } catch {}
     }
-    // Offline fallback
     if (payload.action === 'setDestination') appState.trip.destination = payload.place;
-    if (payload.action === 'addStop') {
-      appState.trip.stops.push({ ...payload.place, id: String(Date.now()), addedBy: currentUser, reached: false });
-    }
-    if (payload.action === 'removeStop') {
-      appState.trip.stops = appState.trip.stops.filter((s) => s.id !== payload.stopId);
-    }
-    if (payload.action === 'toggleStop') {
-      appState.trip.stops = appState.trip.stops.map((s) => (s.id === payload.stopId ? { ...s, reached: !s.reached } : s));
-    }
-    if (appState.location.lat != null && appState.trip.destination) {
-      await computeOfflineEta(appState.location.lat, appState.location.lon);
-    }
+    if (payload.action === 'addStop') appState.trip.stops.push({ ...payload.place, id: String(Date.now()), addedBy: currentUser, reached: false });
+    if (payload.action === 'removeStop') appState.trip.stops = appState.trip.stops.filter((s) => s.id !== payload.stopId);
+    if (payload.action === 'toggleStop') appState.trip.stops = appState.trip.stops.map((s) => (s.id === payload.stopId ? { ...s, reached: !s.reached } : s));
+    if (appState.location.lat != null && appState.trip.destination) await computeOfflineEta(appState.location.lat, appState.location.lon);
     saveLocalState();
     renderAll();
-  }
-
-  function renderPlaceSearchResults(containerId, results, onPick) {
-    const box = document.getElementById(containerId);
-    box.innerHTML = '';
-    if (!results.length) {
-      box.classList.add('hidden');
-      return;
-    }
-    results.forEach((r) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'search-item';
-      btn.innerHTML = `<span><strong>${esc(r.name)}</strong><br><span class="muted">${esc(r.label)}</span></span><span class="btn btn-sm btn-primary">Select</span>`;
-      btn.addEventListener('click', () => {
-        box.classList.add('hidden');
-        onPick(r);
-      });
-      box.appendChild(btn);
-    });
-    box.classList.remove('hidden');
   }
 
   // --- Rendering ---
   function renderHero() {
     const loc = appState.location || {};
     const dest = appState.trip?.destination;
-    document.getElementById('hero-where').textContent = loc.whereAreWe || 'Tap "Share GPS" to start tracking';
-    document.getElementById('hero-updated').textContent = loc.updatedAt
-      ? `${formatAgo(loc.updatedAt)}${loc.reportedBy ? ' • ' + loc.reportedBy : ''}`
-      : 'No GPS ping yet';
+    document.getElementById('hero-dest-eyebrow').textContent = dest ? `TO ${String(dest.name).toUpperCase()}` : 'SET A DESTINATION';
 
-    const sub = dest
-      ? `Heading to ${dest.label || dest.name}`
-      : 'Set a destination in Route & Stops to unlock ETA & progress.';
-    document.getElementById('hero-sub').textContent = sub;
-
-    document.getElementById('m-time-left').textContent = formatDuration(loc.remainingSec);
-    document.getElementById('m-eta').textContent = formatEtaClock(loc.remainingSec);
-    document.getElementById('m-miles-left').textContent = formatMiles(loc.remainingMeters);
-    document.getElementById('m-speed').textContent = loc.lat != null ? `${loc.speedMph ?? 0} mph` : '—';
+    const timeEl = document.getElementById('hero-time-left');
+    if (loc.remainingSec != null) {
+      timeEl.innerHTML = `${esc(formatDuration(loc.remainingSec))}<span class="unit">left</span>`;
+    } else {
+      timeEl.innerHTML = `—`;
+    }
+    document.getElementById('hero-eta-badge').textContent = loc.remainingSec != null ? `Arriving ${formatEtaClock(loc.remainingSec)}` : 'No ETA yet';
+    document.getElementById('hero-where').textContent = loc.whereAreWe || 'Tap "Share Location" above to start';
+    document.getElementById('hero-updated').textContent = `${formatAgo(loc.updatedAt)}${loc.reportedBy ? ' • ' + loc.reportedBy : ''}`;
     document.getElementById('progress-fill').style.width = `${loc.progressPct ?? 0}%`;
 
-    const nextBanner = document.getElementById('next-stop-banner');
-    if (loc.nextStop) {
-      document.getElementById('next-stop-text').textContent = `Next stop: ${loc.nextStop.name}`;
-      document.getElementById('next-stop-eta').textContent = `${formatDuration(loc.nextStop.remainingSec)} • ${formatMiles(loc.nextStop.remainingMeters)}`;
-      nextBanner.classList.remove('hidden');
+    document.getElementById('m-miles-left').textContent = formatMiles(loc.remainingMeters);
+    document.getElementById('m-speed').textContent = loc.lat != null ? `${loc.speedMph ?? 0} mph` : '—';
+    document.getElementById('m-next-stop').textContent = loc.nextStop
+      ? `${loc.nextStop.name} (${formatDuration(loc.nextStop.remainingSec)})`
+      : (dest ? dest.name : 'None');
+  }
+
+  function renderMoneyOverview() {
+    const ts = appState.tripsplitter || { people: DEFAULT_CREW, transactions: [] };
+    const people = ts.people?.length ? ts.people : DEFAULT_CREW;
+    const txs = ts.transactions || [];
+    let total = 0;
+    const stats = {};
+    people.forEach((p) => { stats[p] = { paid: 0, sent: 0, received: 0 }; });
+
+    txs.forEach((t) => {
+      if (t.type === 'expense') {
+        total += Number(t.amount || 0);
+        if (stats[t.payer]) stats[t.payer].paid += Number(t.amount || 0);
+      } else if (t.type === 'payment') {
+        if (stats[t.payer]) stats[t.payer].sent += Number(t.amount || 0);
+        if (stats[t.payee]) stats[t.payee].received += Number(t.amount || 0);
+      }
+    });
+
+    document.getElementById('home-total-spent').textContent = `$${total.toFixed(2)}`;
+    const share = people.length ? total / people.length : 0;
+    const my = stats[currentUser] || { paid: 0, sent: 0, received: 0 };
+    const net = (my.paid - share) + (my.sent - my.received);
+    const badge = document.getElementById('home-my-balance');
+    if (net >= 0.5) {
+      badge.className = 'balance-badge pos';
+      badge.textContent = `${currentUser} gets back $${net.toFixed(0)}`;
+    } else if (net <= -0.5) {
+      badge.className = 'balance-badge neg';
+      badge.textContent = `${currentUser} owes $${Math.abs(net).toFixed(0)}`;
     } else {
-      nextBanner.classList.add('hidden');
+      badge.className = 'balance-badge even';
+      badge.textContent = `${currentUser} is all even`;
     }
+
+    // Mini Donut
+    const svg = document.getElementById('home-donut');
+    const r = 38;
+    const circ = 2 * Math.PI * r;
+    if (total <= 0) {
+      svg.innerHTML = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12" />`;
+      return;
+    }
+    let offset = 0;
+    let markup = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12" />`;
+    people.forEach((p, idx) => {
+      const paid = stats[p]?.paid || 0;
+      if (paid <= 0) return;
+      const dash = (paid / total) * circ;
+      markup += `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${DONUT_COLORS[idx % DONUT_COLORS.length]}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${Math.max(2, dash - 2)} ${circ}" stroke-dashoffset="${-offset}" />`;
+      offset += dash;
+    });
+    svg.innerHTML = markup;
+  }
+
+  function renderHomeVibe() {
+    const queue = (appState.music?.queue || []).filter((q) => !q.played);
+    if (queue.length > 0) {
+      document.getElementById('home-music-title').textContent = `Up Next: ${queue[0].title}`;
+      document.getElementById('home-music-sub').textContent = `Requested by ${queue[0].addedBy} • ${queue.length} in queue`;
+    } else {
+      const count = appState.music?.playlistTracks?.length || 0;
+      document.getElementById('home-music-title').textContent = appState.music?.playlistTitle || 'Dangerous.Business Playlist';
+      document.getElementById('home-music-sub').textContent = count ? `${count} songs on YouTube Music • Tap to open` : 'Tap to open in YouTube Music';
+    }
+
+    const box = document.getElementById('home-latest-msgs');
+    const recent = (appState.messages || []).slice(-2);
+    if (!recent.length) {
+      box.innerHTML = `<div class="muted" style="text-align:center; padding:4px 0;">No car notes yet — tap Note above to say hi!</div>`;
+      return;
+    }
+    box.innerHTML = recent.map((m) => `
+      <div class="msg-bubble" style="margin-bottom:6px;">
+        <div class="msg-top"><span class="msg-author">${esc(m.author)}</span><span>${m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}</span></div>
+        <div style="font-size:0.88rem;">${esc(m.text)}</div>
+      </div>`).join('');
   }
 
   function renderStops() {
@@ -494,9 +524,6 @@
     const stops = appState.trip?.stops || [];
     const loc = appState.location || {};
 
-    document.getElementById('current-dest-label').textContent = dest ? `(${dest.label || dest.name})` : '(not set)';
-
-    // Nav links
     const gmaps = document.getElementById('gmaps-route-link');
     const waze = document.getElementById('waze-next-link');
     const activeStops = stops.filter((s) => !s.reached);
@@ -504,9 +531,7 @@
     if (dest) {
       const params = new URLSearchParams({ api: '1', destination: `${dest.lat},${dest.lon}`, travelmode: 'driving' });
       if (loc.lat != null) params.set('origin', `${loc.lat},${loc.lon}`);
-      if (activeStops.length) {
-        params.set('waypoints', activeStops.map((s) => `${s.lat},${s.lon}`).join('|'));
-      }
+      if (activeStops.length) params.set('waypoints', activeStops.map((s) => `${s.lat},${s.lon}`).join('|'));
       gmaps.href = `https://www.google.com/maps/dir/?${params.toString()}`;
       gmaps.classList.remove('hidden');
 
@@ -520,46 +545,58 @@
 
     const list = document.getElementById('stops-list');
     list.innerHTML = '';
-    if (!stops.length) {
-      list.innerHTML = `<p class="muted" style="text-align:center; padding:8px 0;">No stops added yet. Anyone in the car can add one above!</p>`;
+
+    if (!stops.length && !dest) {
+      list.innerHTML = `<p class="muted" style="text-align:center; padding:8px 0;">Set a destination on Home or pick a quick pit stop above.</p>`;
       return;
     }
 
     stops.forEach((s, idx) => {
       const eta = loc.stopEtas?.[s.id];
-      const etaStr = !s.reached && eta ? `${formatDuration(eta.remainingSec)} • ${formatMiles(eta.remainingMeters)}` : s.reached ? 'Reached' : '';
+      const etaStr = !s.reached && eta ? `${formatDuration(eta.remainingSec)} • ${formatMiles(eta.remainingMeters)}` : (s.reached ? 'Visited' : '');
       const row = document.createElement('div');
-      row.className = `stop-item${s.reached ? ' reached' : ''}`;
+      row.className = `stop-row${s.reached ? ' reached' : ''}`;
       row.innerHTML = `
         <div style="min-width:0; flex:1;">
-          <div class="stop-name" style="font-weight:700; font-size:0.92rem;">${idx + 1}. ${esc(s.name)}</div>
-          <div class="muted">${esc(s.label)} • Added by ${esc(s.addedBy)}${etaStr ? ' • <strong>' + esc(etaStr) + '</strong>' : ''}</div>
+          <div class="stop-name" style="font-weight:700; font-size:0.9rem;">${idx + 1}. ${esc(s.name)}</div>
+          <div class="muted">${esc(s.addedBy)}${etaStr ? ' • ' + esc(etaStr) : ''}</div>
         </div>
-        <div style="display:flex; gap:4px; flex-shrink:0;">
-          <button class="btn btn-sm toggle-stop-btn" title="Mark Reached">${s.reached ? '↩' : '✓'}</button>
-          <button class="btn btn-sm up-stop-btn" title="Move Up">↑</button>
-          <button class="btn btn-sm down-stop-btn" title="Move Down">↓</button>
-          <button class="btn btn-sm del-stop-btn" title="Remove">✕</button>
-        </div>
-      `;
+        <div style="display:flex; gap:5px; flex-shrink:0;">
+          <button class="btn btn-sm toggle-stop-btn">${s.reached ? 'Undo' : 'Done'}</button>
+          <button class="btn btn-sm del-stop-btn" style="color:var(--coral);">✕</button>
+        </div>`;
       row.querySelector('.toggle-stop-btn').addEventListener('click', () => sendRouteAction({ action: 'toggleStop', stopId: s.id }));
-      row.querySelector('.up-stop-btn').addEventListener('click', () => sendRouteAction({ action: 'moveStop', stopId: s.id, dir: -1 }));
-      row.querySelector('.down-stop-btn').addEventListener('click', () => sendRouteAction({ action: 'moveStop', stopId: s.id, dir: 1 }));
-      row.querySelector('.del-stop-btn').addEventListener('click', () => sendRouteAction({ action: 'removeStop', stopId: s.id }));
+      row.querySelector('.del-stop-btn').addEventListener('click', () => {
+        if (confirm(`Remove stop "${s.name}"?`)) sendRouteAction({ action: 'removeStop', stopId: s.id });
+      });
       list.appendChild(row);
     });
+
+    if (dest) {
+      const destRow = document.createElement('div');
+      destRow.className = 'stop-row';
+      destRow.style.borderColor = 'rgba(200,255,61,0.35)';
+      destRow.innerHTML = `
+        <div style="min-width:0; flex:1;">
+          <div style="font-weight:800; font-size:0.92rem; color:var(--lime);">🏁 ${esc(dest.name)}</div>
+          <div class="muted">${esc(dest.label || '')}${loc.remainingSec != null ? ' • ' + formatDuration(loc.remainingSec) + ' left' : ''}</div>
+        </div>
+        <button class="subtle-pill-btn edit-dest-inline" type="button">Edit</button>`;
+      destRow.querySelector('.edit-dest-inline').addEventListener('click', () => openSheet('sheet-dest'));
+      list.appendChild(destRow);
+    }
   }
 
   function initMap() {
     if (map) return;
-    map = L.map('map').setView([42.9634, -85.6681], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; OpenStreetMap',
+    map = L.map('map', { zoomControl: false }).setView([43.156, -85.710], 7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
     }).addTo(map);
     stopMarkersLayer = L.layerGroup().addTo(map);
-    routeLayer = L.polyline([], { color: '#2563eb', weight: 5, opacity: 0.75 }).addTo(map);
-    trailLayer = L.polyline([], { color: '#10b981', weight: 4, opacity: 0.85, dashArray: '6 6' }).addTo(map);
+    routeLayer = L.polyline([], { color: '#9D7BFF', weight: 4, opacity: 0.85 }).addTo(map);
+    trailLayer = L.polyline([], { color: '#C8FF3D', weight: 4, opacity: 0.9, dashArray: '5 6' }).addTo(map);
   }
 
   function updateMap() {
@@ -569,41 +606,27 @@
     const stops = appState.trip?.stops || [];
     const geom = appState.trip?.route?.geometry || [];
 
-    if (geom.length) {
-      routeLayer.setLatLngs(geom.map(([lon, lat]) => [lat, lon]));
-    } else {
-      routeLayer.setLatLngs([]);
-    }
-
-    const trail = loc.trail || [];
-    trailLayer.setLatLngs(trail.map((p) => [p.lat, p.lon]));
+    routeLayer.setLatLngs(geom.length ? geom.map(([lon, lat]) => [lat, lon]) : []);
+    trailLayer.setLatLngs((loc.trail || []).map((p) => [p.lat, p.lon]));
 
     stopMarkersLayer.clearLayers();
     stops.forEach((s, i) => {
       L.circleMarker([s.lat, s.lon], {
-        radius: 8,
-        color: s.reached ? '#94a3b8' : '#f59e0b',
-        fillColor: s.reached ? '#cbd5e1' : '#fbbf24',
-        fillOpacity: 0.95,
+        radius: 7,
+        color: '#0A0B0F',
+        fillColor: s.reached ? '#64748B' : '#FBBF24',
+        fillOpacity: 1,
         weight: 2,
-      })
-        .bindPopup(`<b>Stop ${i + 1}: ${esc(s.name)}</b><br>Added by ${esc(s.addedBy)}`)
-        .addTo(stopMarkersLayer);
+      }).bindPopup(`<b>Stop ${i + 1}: ${esc(s.name)}</b>`).addTo(stopMarkersLayer);
     });
 
     if (dest) {
       if (!destMarker) {
-        destMarker = L.circleMarker([dest.lat, dest.lon], {
-          radius: 9,
-          color: '#dc2626',
-          fillColor: '#ef4444',
-          fillOpacity: 0.95,
-          weight: 2,
-        }).addTo(map);
+        destMarker = L.circleMarker([dest.lat, dest.lon], { radius: 8, color: '#0A0B0F', fillColor: '#FB7185', fillOpacity: 1, weight: 2 }).addTo(map);
       } else {
         destMarker.setLatLng([dest.lat, dest.lon]);
       }
-      destMarker.bindPopup(`<b>Destination:</b> ${esc(dest.name)}`);
+      destMarker.bindPopup(`<b>${esc(dest.name)}</b>`);
     } else if (destMarker) {
       map.removeLayer(destMarker);
       destMarker = null;
@@ -611,32 +634,23 @@
 
     if (loc.lat != null && loc.lon != null) {
       if (!carMarker) {
-        carMarker = L.circleMarker([loc.lat, loc.lon], {
-          radius: 10,
-          color: '#ffffff',
-          fillColor: '#2563eb',
-          fillOpacity: 1,
-          weight: 3,
-        }).addTo(map);
+        carMarker = L.circleMarker([loc.lat, loc.lon], { radius: 9, color: '#0A0B0F', fillColor: '#C8FF3D', fillOpacity: 1, weight: 3 }).addTo(map);
       } else {
         carMarker.setLatLng([loc.lat, loc.lon]);
       }
       carMarker.bindPopup(`<b>Our Car</b><br>${esc(loc.whereAreWe || '')}`);
       if (!hasCenteredMap) {
         hasCenteredMap = true;
-        map.setView([loc.lat, loc.lon], 10);
+        map.setView([loc.lat, loc.lon], 9);
       }
     }
   }
 
-  // --- TripSplitter Same-Origin Bridge ---
+  // --- TripSplitter Sync ---
   function pushStateToTripSplitter() {
     const iframe = document.getElementById('ts-iframe');
     if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      { type: 'tripsplitter:remote', state: appState.tripsplitter },
-      window.location.origin
-    );
+    iframe.contentWindow.postMessage({ type: 'tripsplitter:remote', state: appState.tripsplitter }, window.location.origin);
   }
 
   window.addEventListener('message', async (event) => {
@@ -652,127 +666,142 @@
       };
       if (apiBase) {
         try {
-          const merged = await apiFetch('/api/tripsplitter/sync', {
-            method: 'POST',
-            body: JSON.stringify(payload),
-          });
-          appState.tripsplitter = merged;
+          appState.tripsplitter = await apiFetch('/api/tripsplitter/sync', { method: 'POST', body: JSON.stringify(payload) });
           saveLocalState();
+          renderMoneyOverview();
           updateBadges();
+          return;
         } catch {}
-      } else {
-        appState.tripsplitter = { ...payload };
-        saveLocalState();
-        updateBadges();
       }
+      appState.tripsplitter = { ...payload };
+      saveLocalState();
+      renderMoneyOverview();
+      updateBadges();
     }
   });
 
-  // --- YouTube Player & Music Queue ---
+  // --- YouTube Music & Queue ---
   window.onYouTubeIframeAPIReady = function () {
     ytPlayer = new YT.Player('yt-player-mount', {
-      playerVars: {
-        listType: 'playlist',
-        list: PLAYLIST_ID,
-        rel: 0,
-      },
+      playerVars: { listType: 'playlist', list: PLAYLIST_ID, rel: 0 },
       events: {
         onReady: () => {
           ytReady = true;
-          if (appState.music?.nowPlayingVideoId) {
-            playVideoInEmbed(appState.music.nowPlayingVideoId);
-          }
+          if (appState.music?.nowPlayingVideoId) playVideoInEmbed(appState.music.nowPlayingVideoId);
         },
         onStateChange: (ev) => {
-          if (ev.data === YT.PlayerState.ENDED) {
-            playNextQueuedSong();
-          }
+          if (ev.data === YT.PlayerState.ENDED) playNextQueuedSong();
         },
       },
     });
   };
 
   function playVideoInEmbed(videoId, labelText) {
-    if (!ytReady || !ytPlayer) return;
-    if (activeLoadedVideoId === videoId) return;
+    if (!ytReady || !ytPlayer || activeLoadedVideoId === videoId) return;
     activeLoadedVideoId = videoId;
     ytPlayer.loadVideoById(videoId);
-    document.getElementById('now-playing-label').textContent = labelText || `Playing requested track (${videoId})`;
+    document.getElementById('now-playing-label').textContent = labelText || 'Playing requested song';
   }
 
   function playOfficialPlaylist() {
     activeLoadedVideoId = null;
-    if (ytReady && ytPlayer) {
-      ytPlayer.loadPlaylist({ listType: 'playlist', list: PLAYLIST_ID });
-    }
-    document.getElementById('now-playing-label').textContent = 'Loaded: The Ultimate Roadtrip (YouTube Music Playlist)';
+    if (ytReady && ytPlayer) ytPlayer.loadPlaylist({ listType: 'playlist', list: PLAYLIST_ID });
+    document.getElementById('now-playing-label').textContent = `Playing ${appState.music?.playlistTitle || 'Dangerous.Business'} playlist`;
   }
 
   async function playNextQueuedSong() {
     const next = (appState.music?.queue || []).find((q) => !q.played);
     if (!next) return;
     await musicQueueAction({ action: 'play', queueId: next.id, videoId: next.videoId });
-    playVideoInEmbed(next.videoId, `Playing next in queue: ${next.title}`);
+    playVideoInEmbed(next.videoId, `Playing: ${next.title}`);
   }
 
   async function musicQueueAction(payload) {
     if (apiBase) {
       try {
-        appState.music = await apiFetch('/api/music/queue', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+        appState.music = await apiFetch('/api/music/queue', { method: 'POST', body: JSON.stringify(payload) });
         saveLocalState();
         renderMusic();
+        renderHomeVibe();
+        updateBadges();
         return;
       } catch {}
     }
     if (payload.action === 'add' && payload.track) {
-      appState.music.queue.push({
-        id: String(Date.now()),
-        ...payload.track,
-        addedBy: payload.addedBy || currentUser,
-        note: payload.note || '',
-        votes: [currentUser],
-        played: false,
-      });
+      appState.music.queue.push({ id: String(Date.now()), ...payload.track, addedBy: payload.addedBy || currentUser, note: payload.note || '', votes: [currentUser], played: false });
     } else if (payload.action === 'play') {
       appState.music.nowPlayingVideoId = payload.videoId;
-      appState.music.queue.forEach((q) => {
-        if (q.id === payload.queueId) q.played = true;
-      });
+      appState.music.queue.forEach((q) => { if (q.id === payload.queueId) q.played = true; });
     }
     saveLocalState();
     renderMusic();
+    renderHomeVibe();
+    updateBadges();
+  }
+
+  async function runMusicSearch(inputEl, noteVal, boxEl) {
+    const q = inputEl.value.trim();
+    if (!q) return;
+    if (!apiBase) {
+      boxEl.innerHTML = `<div style="padding:12px;" class="muted">Offline right now — tap <strong>+ Collaborate</strong> to add directly in YouTube Music.</div>`;
+      boxEl.classList.remove('hidden');
+      return;
+    }
+    const data = await apiFetch(`/api/music/search?q=${encodeURIComponent(q)}`);
+    const results = data.results || [];
+    boxEl.innerHTML = '';
+    if (!results.length) {
+      boxEl.innerHTML = `<div style="padding:12px;" class="muted">No songs found. Try another title or paste a YouTube link.</div>`;
+      boxEl.classList.remove('hidden');
+      return;
+    }
+    results.forEach((t) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'search-item';
+      btn.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <img class="track-thumb" src="${esc(t.thumbnail)}" alt="">
+          <div style="min-width:0;">
+            <div class="track-title">${esc(t.title)}</div>
+            <div class="track-meta">${esc(t.channel)}${t.duration ? ' • ' + esc(t.duration) : ''}</div>
+          </div>
+        </div>
+        <span class="btn btn-sm btn-lime">+ Add</span>`;
+      btn.addEventListener('click', async () => {
+        inputEl.value = '';
+        boxEl.classList.add('hidden');
+        await musicQueueAction({ action: 'add', track: t, addedBy: currentUser, note: noteVal });
+        closeAllSheets();
+      });
+      boxEl.appendChild(btn);
+    });
+    boxEl.classList.remove('hidden');
   }
 
   function renderMusic() {
     const qList = document.getElementById('music-queue-list');
     const queue = appState.music?.queue || [];
     qList.innerHTML = '';
-
     if (!queue.length) {
-      qList.innerHTML = `<p class="muted" style="text-align:center; padding:8px 0;">Queue is empty — search a song above to add to the car DJ list!</p>`;
+      qList.innerHTML = `<p class="muted" style="text-align:center; padding:6px 0;">No songs requested yet — search above to add one!</p>`;
     } else {
       const sorted = [...queue].sort((a, b) => Number(a.played) - Number(b.played) || (b.votes?.length || 0) - (a.votes?.length || 0));
       sorted.forEach((q) => {
         const voted = (q.votes || []).includes(currentUser);
         const row = document.createElement('div');
         row.className = 'track-row';
-        if (q.played) row.style.opacity = '0.55';
+        if (q.played) row.style.opacity = '0.5';
         row.innerHTML = `
           <img class="track-thumb" src="${esc(q.thumbnail)}" alt="">
           <div class="track-info">
             <div class="track-title">${esc(q.title)}</div>
-            <div class="track-meta">${esc(q.channel)}${q.duration ? ' • ' + esc(q.duration) : ''} • By ${esc(q.addedBy)}${q.note ? ' — "' + esc(q.note) + '"' : ''}</div>
+            <div class="track-meta">${esc(q.addedBy)}${q.note ? ' — "' + esc(q.note) + '"' : ''}</div>
           </div>
-          <div style="display:flex; gap:4px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
-            <button class="btn btn-sm btn-primary play-q-btn" title="Play Here">▶</button>
-            <a class="btn btn-sm" href="https://music.youtube.com/watch?v=${encodeURIComponent(q.videoId)}" target="_blank" rel="noopener" title="Open in YouTube Music">YTM</a>
-            <button class="btn btn-sm vote-q-btn" style="${voted ? 'background:#dbeafe;border-color:#93c5fd;' : ''}">👍 ${(q.votes || []).length}</button>
-            <button class="btn btn-sm done-q-btn" title="Mark Played">${q.played ? '↩' : '✓'}</button>
-          </div>
-        `;
+          <div style="display:flex; gap:5px; flex-shrink:0;">
+            <button class="btn btn-sm btn-lime play-q-btn">Play</button>
+            <button class="btn btn-sm vote-q-btn" style="${voted ? 'border-color:var(--lime);color:var(--lime);' : ''}">👍 ${(q.votes || []).length}</button>
+          </div>`;
         row.querySelector('.play-q-btn').addEventListener('click', () => {
           musicQueueAction({ action: 'play', queueId: q.id, videoId: q.videoId });
           playVideoInEmbed(q.videoId, `Playing: ${q.title}`);
@@ -780,39 +809,28 @@
         row.querySelector('.vote-q-btn').addEventListener('click', () => {
           musicQueueAction({ action: 'vote', queueId: q.id, who: currentUser });
         });
-        row.querySelector('.done-q-btn').addEventListener('click', () => {
-          musicQueueAction({ action: 'togglePlayed', queueId: q.id });
-        });
         qList.appendChild(row);
       });
     }
 
     const pList = document.getElementById('playlist-tracks-list');
     const tracks = appState.music?.playlistTracks || [];
-    pList.innerHTML = '';
-    if (!tracks.length) {
-      pList.innerHTML = `<p class="muted">Click "Sync Tracks" (with laptop server running) or open the playlist directly in YouTube Music.</p>`;
-    } else {
-      tracks.forEach((t, i) => {
-        const row = document.createElement('div');
-        row.className = 'track-row';
-        row.innerHTML = `
-          <img class="track-thumb" src="${esc(t.thumbnail)}" alt="">
-          <div class="track-info">
-            <div class="track-title">${i + 1}. ${esc(t.title)}</div>
-            <div class="track-meta">${esc(t.channel)}${t.duration ? ' • ' + esc(t.duration) : ''}</div>
-          </div>
-          <div style="display:flex; gap:4px;">
-            <button class="btn btn-sm play-pl-btn">▶</button>
-            <a class="btn btn-sm" href="https://music.youtube.com/watch?v=${encodeURIComponent(t.videoId)}&list=${PLAYLIST_ID}" target="_blank" rel="noopener">YTM</a>
-          </div>
-        `;
-        row.querySelector('.play-pl-btn').addEventListener('click', () => {
-          playVideoInEmbed(t.videoId, `Playing from playlist: ${t.title}`);
-        });
-        pList.appendChild(row);
-      });
-    }
+    pList.innerHTML = tracks.length
+      ? ''
+      : `<p class="muted">Open YouTube Music above to play or edit the playlist.</p>`;
+    tracks.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'track-row';
+      row.innerHTML = `
+        <img class="track-thumb" src="${esc(t.thumbnail)}" alt="">
+        <div class="track-info">
+          <div class="track-title">${i + 1}. ${esc(t.title)}</div>
+          <div class="track-meta">${esc(t.channel)}${t.duration ? ' • ' + esc(t.duration) : ''}</div>
+        </div>
+        <button class="btn btn-sm play-pl-btn">Play</button>`;
+      row.querySelector('.play-pl-btn').addEventListener('click', () => playVideoInEmbed(t.videoId, `Playing: ${t.title}`));
+      pList.appendChild(row);
+    });
   }
 
   // --- Messages ---
@@ -820,35 +838,26 @@
     if (!text.trim()) return;
     if (apiBase) {
       try {
-        const res = await apiFetch('/api/messages', {
-          method: 'POST',
-          body: JSON.stringify({ author: currentUser, text: text.trim() }),
-        });
+        const res = await apiFetch('/api/messages', { method: 'POST', body: JSON.stringify({ author: currentUser, text: text.trim() }) });
         if (res.messages) appState.messages = res.messages;
         saveLocalState();
         renderMessages();
+        renderHomeVibe();
+        updateBadges();
         return;
       } catch {}
     }
-    appState.messages.push({
-      id: String(Date.now()),
-      author: currentUser,
-      text: text.trim(),
-      placeSnapshot: appState.location?.whereAreWe || null,
-      createdAt: new Date().toISOString(),
-      reactions: {},
-    });
+    appState.messages.push({ id: String(Date.now()), author: currentUser, text: text.trim(), placeSnapshot: appState.location?.whereAreWe || null, createdAt: new Date().toISOString(), reactions: {} });
     saveLocalState();
     renderMessages();
+    renderHomeVibe();
+    updateBadges();
   }
 
   async function reactMessage(messageId, emoji) {
     if (!apiBase) return;
     try {
-      const res = await apiFetch('/api/messages', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'react', messageId, emoji, who: currentUser }),
-      });
+      const res = await apiFetch('/api/messages', { method: 'POST', body: JSON.stringify({ action: 'react', messageId, emoji, who: currentUser }) });
       if (res.messages) appState.messages = res.messages;
       renderMessages();
     } catch {}
@@ -858,27 +867,21 @@
     const list = document.getElementById('msg-list');
     const msgs = appState.messages || [];
     list.innerHTML = '';
-
     if (!msgs.length) {
-      list.innerHTML = `<p class="muted" style="text-align:center; padding:16px 0;">No messages yet — say hi to the car!</p>`;
+      list.innerHTML = `<p class="muted" style="text-align:center; padding:14px 0;">No messages yet — say hi to the car!</p>`;
       return;
     }
-
     msgs.forEach((m) => {
       const mine = m.author === currentUser;
-      const card = document.createElement('div');
-      card.className = `msg-card${mine ? ' mine' : ''}`;
+      const bubble = document.createElement('div');
+      bubble.className = `msg-bubble${mine ? ' mine' : ''}`;
       const timeStr = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-      card.innerHTML = `
-        <div class="msg-head">
-          <span class="msg-author">${esc(m.author)}</span>
-          <span>${esc(timeStr)}</span>
-        </div>
-        <div>${esc(m.text)}</div>
-        ${m.placeSnapshot ? `<div class="msg-place">📍 ${esc(m.placeSnapshot)}</div>` : ''}
-        <div class="react-row"></div>
-      `;
-      const reactRow = card.querySelector('.react-row');
+      bubble.innerHTML = `
+        <div class="msg-top"><span class="msg-author">${esc(m.author)}</span><span>${esc(timeStr)}</span></div>
+        <div style="font-size:0.9rem;">${esc(m.text)}</div>
+        ${m.placeSnapshot ? `<div class="msg-loc">📍 ${esc(m.placeSnapshot)}</div>` : ''}
+        <div class="react-row"></div>`;
+      const row = bubble.querySelector('.react-row');
       ['🔥', '😂', '👍', '☕'].forEach((emoji) => {
         const users = m.reactions?.[emoji] || [];
         const btn = document.createElement('button');
@@ -886,23 +889,30 @@
         btn.className = `react-btn${users.includes(currentUser) ? ' active' : ''}`;
         btn.textContent = users.length ? `${emoji} ${users.length}` : emoji;
         btn.addEventListener('click', () => reactMessage(m.id, emoji));
-        reactRow.appendChild(btn);
+        row.appendChild(btn);
       });
-      list.appendChild(card);
+      list.appendChild(bubble);
     });
     list.scrollTop = list.scrollHeight;
   }
 
   function updateBadges() {
-    document.getElementById('badge-stops').textContent = String((appState.trip?.stops || []).filter((s) => !s.reached).length);
-    document.getElementById('badge-tx').textContent = String((appState.tripsplitter?.transactions || []).length);
-    document.getElementById('badge-queue').textContent = String((appState.music?.queue || []).filter((q) => !q.played).length);
-    document.getElementById('badge-msgs').textContent = String((appState.messages || []).length);
+    const setBadge = (id, num) => {
+      const el = document.getElementById(id);
+      el.textContent = String(num);
+      el.classList.toggle('hidden', num <= 0);
+    };
+    setBadge('badge-stops', (appState.trip?.stops || []).filter((s) => !s.reached).length);
+    setBadge('badge-tx', (appState.tripsplitter?.transactions || []).length);
+    const vibeCount = (appState.music?.queue || []).filter((q) => !q.played).length + (appState.messages || []).length;
+    setBadge('badge-vibe', vibeCount);
   }
 
   function renderAll() {
-    renderCrewPills();
+    renderWho();
     renderHero();
+    renderMoneyOverview();
+    renderHomeVibe();
     renderStops();
     updateMap();
     renderMusic();
@@ -910,125 +920,111 @@
     updateBadges();
   }
 
-  // --- Wire UI Events ---
+  // --- Wire Events ---
   function bindEvents() {
-    document.querySelectorAll('.tab-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.tab;
-        document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b === btn));
-        document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${target}`));
-        if (target === 'route' && map) {
-          setTimeout(() => map.invalidateSize(), 60);
-        }
-      });
+    document.querySelectorAll('.nav-item').forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    document.getElementById('home-goto-split').addEventListener('click', () => switchTab('split'));
+    document.getElementById('home-goto-vibe').addEventListener('click', () => switchTab('vibe'));
+    document.getElementById('who-picker-btn').addEventListener('click', () => openSheet('sheet-who'));
+    document.getElementById('open-dest-sheet-btn').addEventListener('click', () => openSheet('sheet-dest'));
+
+    // Quick Action Circles
+    document.getElementById('qa-stop-btn').addEventListener('click', () => openSheet('sheet-stop'));
+    document.getElementById('stops-search-open-btn').addEventListener('click', () => openSheet('sheet-stop'));
+    document.getElementById('qa-cost-btn').addEventListener('click', () => {
+      switchTab('split');
+      const iframe = document.getElementById('ts-iframe');
+      setTimeout(() => {
+        iframe?.contentWindow?.postMessage({ type: 'tripsplitter:openModal', modal: 'expense' }, window.location.origin);
+      }, 120);
+    });
+    document.getElementById('qa-song-btn').addEventListener('click', () => openSheet('sheet-song'));
+    document.getElementById('qa-msg-btn').addEventListener('click', () => openSheet('sheet-msg'));
+
+    // Close sheets
+    document.querySelectorAll('.close-sheet-btn').forEach((b) => b.addEventListener('click', closeAllSheets));
+    document.querySelectorAll('.sheet-backdrop').forEach((bd) => {
+      bd.addEventListener('click', (e) => { if (e.target === bd) closeAllSheets(); });
     });
 
     document.getElementById('gps-toggle-btn').addEventListener('click', () => {
-      if (gpsEnabled) stopGps();
-      else startGps();
+      if (gpsEnabled) stopGps(); else startGps();
     });
 
+    // Destination Search Sheet
     const runDestSearch = async () => {
-      const q = document.getElementById('dest-input').value;
-      const results = await searchPlaces(q);
-      renderPlaceSearchResults('dest-results', results, (place) => {
-        document.getElementById('dest-input').value = place.label || place.name;
+      const q = document.getElementById('sheet-dest-input').value;
+      const results = await searchPlaces(q, false);
+      renderPlaceSearchResults('sheet-dest-results', results, 'Set', (place) => {
+        closeAllSheets();
         sendRouteAction({ action: 'setDestination', place });
       });
     };
-    document.getElementById('dest-search-btn').addEventListener('click', runDestSearch);
-    document.getElementById('dest-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); runDestSearch(); }
-    });
+    document.getElementById('sheet-dest-btn').addEventListener('click', runDestSearch);
+    document.getElementById('sheet-dest-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); runDestSearch(); } });
 
-    const runStopSearch = async (queryOverride) => {
-      const q = queryOverride || document.getElementById('stop-input').value;
-      const results = await searchPlaces(q);
-      renderPlaceSearchResults('stop-results', results, (place) => {
-        document.getElementById('stop-input').value = '';
+    // Stop Search Sheet + Stops Tab Quick Chips
+    const runStopSearch = async (query, nearby, targetBoxId) => {
+      const results = await searchPlaces(query, nearby);
+      renderPlaceSearchResults(targetBoxId, results, 'Add', (place) => {
+        document.getElementById('sheet-stop-input').value = '';
+        closeAllSheets();
         sendRouteAction({ action: 'addStop', place, addedBy: currentUser });
       });
     };
-    document.getElementById('stop-search-btn').addEventListener('click', () => runStopSearch());
-    document.getElementById('stop-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); runStopSearch(); }
+    document.getElementById('sheet-stop-btn').addEventListener('click', () => runStopSearch(document.getElementById('sheet-stop-input').value, false, 'sheet-stop-results'));
+    document.getElementById('sheet-stop-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); runStopSearch(document.getElementById('sheet-stop-input').value, false, 'sheet-stop-results'); }
     });
-    document.querySelectorAll('.quick-stop-chip').forEach((chip) => {
-      chip.addEventListener('click', () => runStopSearch(chip.dataset.q));
+    document.querySelectorAll('.sheet-pit-chip').forEach((c) => {
+      c.addEventListener('click', () => runStopSearch(c.dataset.q, true, 'sheet-stop-results'));
+    });
+    document.querySelectorAll('.quick-stop-chip').forEach((c) => {
+      c.addEventListener('click', () => runStopSearch(c.dataset.q, true, 'stops-tab-results'));
     });
 
-    document.getElementById('recalc-route-btn').addEventListener('click', () => sendRouteAction({ action: 'recalculate' }));
     document.getElementById('center-map-btn').addEventListener('click', () => {
-      if (map && appState.location?.lat != null) {
-        map.setView([appState.location.lat, appState.location.lon], 12);
-      }
+      if (map && appState.location?.lat != null) map.setView([appState.location.lat, appState.location.lon], 11);
     });
 
-    // Music
+    // Music Searches (Tab + Sheet)
     document.getElementById('play-playlist-btn').addEventListener('click', playOfficialPlaylist);
-    document.getElementById('refresh-playlist-btn').addEventListener('click', async () => {
-      if (!apiBase) return;
-      const res = await apiFetch('/api/music/playlist?force=1');
-      appState.music.playlistTracks = res.tracks || [];
-      renderMusic();
+    document.getElementById('music-search-btn').addEventListener('click', () => {
+      runMusicSearch(document.getElementById('music-search-input'), '', document.getElementById('music-search-results'));
     });
-
-    const runMusicSearch = async () => {
-      const q = document.getElementById('music-search-input').value.trim();
-      if (!q) return;
-      const box = document.getElementById('music-search-results');
-      if (!apiBase) {
-        box.innerHTML = `<div style="padding:10px; font-size:0.85rem;">Laptop sync offline — use the <strong>+ Join YTM Collab</strong> button above to add directly to YouTube Music!</div>`;
-        box.classList.remove('hidden');
-        return;
-      }
-      const data = await apiFetch(`/api/music/search?q=${encodeURIComponent(q)}`);
-      box.innerHTML = '';
-      const results = data.results || [];
-      if (!results.length) {
-        box.classList.add('hidden');
-        return;
-      }
-      results.forEach((t) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'search-item';
-        btn.innerHTML = `
-          <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-            <img class="track-thumb" src="${esc(t.thumbnail)}" alt="">
-            <div style="min-width:0;">
-              <div class="track-title">${esc(t.title)}</div>
-              <div class="track-meta">${esc(t.channel)}${t.duration ? ' • ' + esc(t.duration) : ''}</div>
-            </div>
-          </div>
-          <span class="btn btn-sm btn-emerald">+ Queue</span>
-        `;
-        btn.addEventListener('click', async () => {
-          const note = document.getElementById('music-note-input').value.trim();
-          document.getElementById('music-note-input').value = '';
-          document.getElementById('music-search-input').value = '';
-          box.classList.add('hidden');
-          await musicQueueAction({ action: 'add', track: t, addedBy: currentUser, note });
-        });
-        box.appendChild(btn);
-      });
-      box.classList.remove('hidden');
-    };
-    document.getElementById('music-search-btn').addEventListener('click', runMusicSearch);
     document.getElementById('music-search-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); runMusicSearch(); }
+      if (e.key === 'Enter') { e.preventDefault(); runMusicSearch(document.getElementById('music-search-input'), '', document.getElementById('music-search-results')); }
+    });
+    document.getElementById('sheet-song-btn').addEventListener('click', () => {
+      runMusicSearch(document.getElementById('sheet-song-input'), document.getElementById('sheet-song-note').value.trim(), document.getElementById('sheet-song-results'));
+    });
+    document.getElementById('sheet-song-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runMusicSearch(document.getElementById('sheet-song-input'), document.getElementById('sheet-song-note').value.trim(), document.getElementById('sheet-song-results'));
+      }
     });
 
-    // Chat
+    // Chat (Tab + Sheet)
     document.getElementById('msg-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const input = document.getElementById('msg-input');
-      const text = input.value;
-      input.value = '';
+      const text = input.value; input.value = '';
       postMessage(text);
     });
-    document.querySelectorAll('.quick-msg-chip').forEach((chip) => {
-      chip.addEventListener('click', () => postMessage(chip.textContent));
+    document.querySelectorAll('.quick-msg-chip').forEach((c) => c.addEventListener('click', () => postMessage(c.textContent)));
+    document.getElementById('sheet-msg-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('sheet-msg-input');
+      const text = input.value; input.value = '';
+      closeAllSheets();
+      postMessage(text);
+    });
+    document.querySelectorAll('.sheet-quick-msg').forEach((c) => {
+      c.addEventListener('click', () => { closeAllSheets(); postMessage(c.textContent); });
     });
   }
 
@@ -1038,14 +1034,13 @@
     updateGpsButton();
     renderAll();
 
-    // Load YouTube IFrame API
     const ytScript = document.createElement('script');
     ytScript.src = 'https://www.youtube.com/iframe_api';
     document.head.appendChild(ytScript);
 
     apiBase = await discoverApiBase();
     if (apiBase) {
-      setSyncPill(true, 'Laptop Live Sync');
+      setOnlineStatus(true);
       try {
         appState = await apiFetch('/api/state');
         saveLocalState();
@@ -1054,12 +1049,10 @@
       } catch {}
       connectSSE();
     } else {
-      setSyncPill(false, 'Standalone Mode (Local)');
+      setOnlineStatus(false);
     }
 
-    if (gpsEnabled) {
-      startGps();
-    }
+    if (gpsEnabled) startGps();
 
     setInterval(() => {
       if (appState.location?.updatedAt) {
