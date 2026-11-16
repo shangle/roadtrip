@@ -1,16 +1,16 @@
 (() => {
   'use strict';
 
-  const DEFAULT_PLAYLIST_URL = 'https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw';
+  const DEFAULT_PLAYLIST_URL = 'https://music.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI';
   const DONUT_COLORS = ['#C8FF3D', '#9D7BFF', '#56CCF2', '#FB7185', '#FBBF24', '#34D399'];
-  const LAST_TRIP_STORAGE_KEY = 'db_last_trip_state_v3';
+  const LAST_TRIP_STORAGE_KEY = 'db_last_trip_state_v4';
   const A2HS_DISMISS_KEY = 'roadtrip_a2hs_dismissed_v1';
 
   let appState = null;
   let activePassword = null;
   let pendingEncryptedPayload = null;
   let pendingMergeContext = null;
-  let currentUser = localStorage.getItem('roadtrip_who') || 'Tim';
+  let currentUser = localStorage.getItem('roadtrip_who_v4') || 'Michael';
   let welcomeSelectedUser = null;
   let dirtyCount = 0;
   let lastDirtyReason = '';
@@ -21,11 +21,11 @@
   let wizStep = 1;
   let wizState = {
     title: '',
-    crew: ['Tim', 'Chris', 'Jessica', 'Nancy'],
+    crew: ['Michael', 'Dwight', 'Jim', 'Pam'],
     modules: { locations: true, expenses: true, playlist: true, notes: true },
     destination: null,
     playlistUrl: DEFAULT_PLAYLIST_URL,
-    playlistTitle: 'Dangerous.Business',
+    playlistTitle: 'Threat Level Midnight Mix',
     firstNote: '',
     security: 'standard',
     password: '',
@@ -59,10 +59,10 @@
 
   function avatarClassFor(name) {
     const key = String(name || '').trim().toLowerCase();
-    if (key === 'tim') return 'avatar-tim';
-    if (key === 'chris') return 'avatar-chris';
-    if (key === 'jessica') return 'avatar-jessica';
-    if (key === 'nancy') return 'avatar-nancy';
+    if (key === 'michael') return 'avatar-tim';
+    if (key === 'dwight') return 'avatar-chris';
+    if (key === 'jim') return 'avatar-jessica';
+    if (key === 'pam') return 'avatar-nancy';
     return '';
   }
 
@@ -179,54 +179,80 @@
   function createDemoTripState() {
     return {
       v: 3,
-      id: 'demo_moa_run',
+      id: 'demo_dunder_mifflin_party',
       updatedAt: Date.now(),
-      title: 'Mall of America Roadtrip',
-      crew: ['Tim', 'Chris', 'Jessica', 'Nancy'],
+      title: 'Party at Dunder Mifflin',
+      crew: ['Michael', 'Dwight', 'Jim', 'Pam'],
       modules: { locations: true, expenses: true, playlist: true, notes: true },
       encrypted: false,
       trip: {
         destination: {
-          name: 'Mall of America',
-          label: 'Mall of America, Bloomington, MN',
-          lat: 44.8550204,
-          lon: -93.2421195,
+          name: 'Dunder Mifflin Scranton',
+          label: '1725 Slough Ave, Scranton, PA',
+          lat: 41.40897,
+          lon: -75.66241,
         },
-        stops: [],
+        stops: [
+          {
+            id: 'stop_dm_1',
+            name: "Alfredo's Pizza Cafe",
+            label: 'Scranton, PA (The Good Pizza)',
+            lat: 41.4125,
+            lon: -75.6652,
+            addedBy: 'Michael',
+            reached: false,
+          },
+          {
+            id: 'stop_dm_2',
+            name: 'Schrute Farms',
+            label: 'Honesdale, PA',
+            lat: 41.5742,
+            lon: -75.2557,
+            addedBy: 'Dwight',
+            reached: true,
+          },
+        ],
         deletedStopIds: [],
       },
       location: {
-        lat: 43.15638,
-        lon: -85.710315,
-        speedMph: 0,
-        updatedAt: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
-        reportedBy: 'Tim',
-        whereAreWe: 'On West Averill Street • Near Sparta, MI',
-        remainingMeters: 972043,
-        remainingSec: 41100,
-        progressPct: 12,
-        nextStop: null,
+        lat: 41.3201,
+        lon: -75.7512,
+        speedMph: 62,
+        updatedAt: new Date(Date.now() - 14 * 60 * 1000).toISOString(),
+        reportedBy: 'Dwight',
+        whereAreWe: 'On I-81 N • Near Scranton, PA',
+        remainingMeters: 18400,
+        remainingSec: 1500,
+        progressPct: 72,
+        nextStop: { name: "Alfredo's Pizza Cafe", remainingSec: 900 },
       },
       expenses: {
         transactions: [
-          { id: 1731450001000, type: 'expense', description: 'Hotel Rooms', amount: 246, payer: 'Tim', updatedAt: 1731450001000 },
-          { id: 1731450002000, type: 'expense', description: 'Second Night Hotel', amount: 246, payer: 'Tim', updatedAt: 1731450002000 },
-          { id: 1731450003000, type: 'payment', description: 'Repayment: Nancy → Tim', amount: 100, payer: 'Nancy', payee: 'Tim', updatedAt: 1731450003000 },
-          { id: 1731450004000, type: 'expense', description: 'Gas & Road Snacks', amount: 38.32, payer: 'Tim', updatedAt: 1731450004000 },
+          { id: 1731450001000, type: 'expense', description: 'Party Planning Committee Supplies & Ice', amount: 142, payer: 'Michael', updatedAt: 1731450001000 },
+          { id: 1731450002000, type: 'expense', description: "Alfredo's Pizza Cafe (NOT Pizza by Alfredo)", amount: 86.5, payer: 'Jim', updatedAt: 1731450002000 },
+          { id: 1731450003000, type: 'payment', description: 'Repayment: Pam → Michael', amount: 40, payer: 'Pam', payee: 'Michael', updatedAt: 1731450003000 },
+          { id: 1731450004000, type: 'expense', description: 'Beet Energy Drinks & Party Streamers', amount: 47.5, payer: 'Dwight', updatedAt: 1731450004000 },
         ],
         deletedIds: [],
       },
       music: {
-        playlistTitle: 'Dangerous.Business',
+        playlistTitle: 'Threat Level Midnight Mix',
         collabUrl: DEFAULT_PLAYLIST_URL,
       },
       messages: [
         {
           id: 'msg_demo_1',
-          author: 'Tim',
-          text: 'Playlist & expense tracker are live in this link—tap Share the Update anytime you add something!',
+          author: 'Michael',
+          text: 'Conference room in 5 minutes! Door code for the Scranton Business Park gate is #1725.',
           createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-          whereAreWe: 'Near Sparta, MI',
+          whereAreWe: 'Near Scranton, PA',
+        },
+        {
+          id: 'msg_demo_2',
+          author: 'Dwight',
+          text: 'FACT: Anyone who orders from Pizza by Alfredo instead of Alfredo’s Pizza Cafe will be billed separately.',
+          createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+          whereAreWe: 'On I-81 N • Near Scranton, PA',
         },
       ],
     };
@@ -237,8 +263,8 @@
       v: 3,
       id: raw?.id || 'trip_' + Date.now().toString(36),
       updatedAt: raw?.updatedAt || Date.now(),
-      title: raw?.title || 'Crew Trip',
-      crew: Array.isArray(raw?.crew) && raw.crew.length ? raw.crew : ['Tim', 'Chris', 'Jessica', 'Nancy'],
+      title: raw?.title || 'Party at Dunder Mifflin',
+      crew: Array.isArray(raw?.crew) && raw.crew.length ? raw.crew : ['Michael', 'Dwight', 'Jim', 'Pam'],
       modules: {
         locations: raw?.modules?.locations !== false,
         expenses: raw?.modules?.expenses !== false,
@@ -499,7 +525,7 @@
     }
 
     if (!appState.crew.includes(currentUser)) {
-      currentUser = appState.crew[0] || 'Tim';
+      currentUser = appState.crew[0] || 'Michael';
     }
 
     dirtyCount = 0;
@@ -591,11 +617,11 @@
     wizStep = 1;
     wizState = {
       title: '',
-      crew: ['Tim', 'Chris', 'Jessica', 'Nancy'],
+      crew: ['Michael', 'Dwight', 'Jim', 'Pam'],
       modules: { locations: true, expenses: true, playlist: true, notes: true },
       destination: null,
       playlistUrl: DEFAULT_PLAYLIST_URL,
-      playlistTitle: 'Dangerous.Business',
+      playlistTitle: 'Threat Level Midnight Mix',
       firstNote: '',
       security: 'standard',
       password: '',
@@ -605,7 +631,7 @@
     document.getElementById('wiz-dest-selected').classList.add('hidden');
     document.getElementById('wiz-dest-results').classList.add('hidden');
     document.getElementById('wiz-playlist-url').value = DEFAULT_PLAYLIST_URL;
-    document.getElementById('wiz-playlist-title').value = 'Dangerous.Business';
+    document.getElementById('wiz-playlist-title').value = 'Threat Level Midnight Mix';
     document.getElementById('wiz-first-note').value = '';
     document.getElementById('wiz-password-input').value = '';
     renderWizard();
@@ -687,7 +713,7 @@
       id: 'trip_' + Date.now().toString(36),
       updatedAt: Date.now(),
       title,
-      crew: wizState.crew.length ? wizState.crew : ['Tim', 'Chris'],
+      crew: wizState.crew.length ? wizState.crew : ['Michael', 'Dwight'],
       modules: { ...wizState.modules },
       encrypted: wizState.security === 'encrypted',
       trip: {
@@ -1247,7 +1273,7 @@
   }
 
   function openExpenseModal(type = 'expense', existingTx = null) {
-    const people = appState?.crew || ['Tim'];
+    const people = appState?.crew || ['Michael'];
     const payerSel = document.getElementById('tx-payer');
     const payeeSel = document.getElementById('tx-payee');
     payerSel.innerHTML = people.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
@@ -1330,7 +1356,7 @@
 
     return {
       service: 'Music Playlist',
-      embedUrl: `https://www.youtube.com/embed/videoseries?list=PLO6qnlYSFTDc&rel=0`,
+      embedUrl: `https://www.youtube.com/embed/videoseries?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI&rel=0`,
       openUrl: url,
     };
   }
@@ -1787,7 +1813,7 @@
 
     document.getElementById('wiz-sample-playlist-btn')?.addEventListener('click', () => {
       document.getElementById('wiz-playlist-url').value = DEFAULT_PLAYLIST_URL;
-      document.getElementById('wiz-playlist-title').value = 'Dangerous.Business';
+      document.getElementById('wiz-playlist-title').value = 'Threat Level Midnight Mix';
     });
 
     document.getElementById('wiz-sec-standard')?.addEventListener('click', () => {

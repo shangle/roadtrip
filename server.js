@@ -11,9 +11,9 @@ const ROOT_DIR = __dirname;
 const DATA_DIR = path.join(ROOT_DIR, 'data');
 const STATE_FILE = path.join(DATA_DIR, 'trip-state.json');
 
-const PLAYLIST_ID = 'PLO6qnlYSFTDc';
-const COLLAB_URL = 'https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw';
-const DEFAULT_CREW = ['Tim', 'Chris', 'Jessica', 'Nancy'];
+const PLAYLIST_ID = 'PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI';
+const COLLAB_URL = 'https://music.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI';
+const DEFAULT_CREW = ['Michael', 'Dwight', 'Jim', 'Pam'];
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',

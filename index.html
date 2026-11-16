@@ -122,25 +122,25 @@
 
           <div class="preview-hero-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span class="dest-eyebrow">BACHELOR RUN • TO LAS VEGAS</span>
+              <span class="dest-eyebrow">PARTY AT DUNDER MIFFLIN • SCRANTON</span>
               <span class="eta-badge">ETA 4:15 PM</span>
             </div>
-            <div class="preview-big-stat">3h 40m <span class="unit">left</span></div>
+            <div class="preview-big-stat">25m <span class="unit">left</span></div>
             <div class="preview-where">
               <div class="where-label">WHERE WE ARE</div>
-              <div style="font-size:1.25rem; font-weight:800; color:#fff;">On I-15 S • Near Baker, CA</div>
+              <div style="font-size:1.25rem; font-weight:800; color:#fff;">On I-81 N • Near Scranton, PA</div>
             </div>
           </div>
 
           <div class="preview-mini-grid">
             <div class="preview-mini-card">
               <div class="muted" style="font-size:0.72rem; font-weight:700;">SPLIT TAB</div>
-              <div style="font-size:1.45rem; font-weight:800; color:#fff; margin-top:2px;">$1,480</div>
-              <div style="font-size:0.75rem; color:var(--lime); font-weight:800; margin-top:4px;">Tim gets back $420</div>
+              <div style="font-size:1.45rem; font-weight:800; color:#fff; margin-top:2px;">$276</div>
+              <div style="font-size:0.75rem; color:var(--lime); font-weight:800; margin-top:4px;">Michael gets back $113</div>
             </div>
             <div class="preview-mini-card">
               <div class="muted" style="font-size:0.72rem; font-weight:700;">SHARED PLAYLIST</div>
-              <div style="font-size:1rem; font-weight:800; color:#fff; margin-top:4px;">🎵 Desert Run Mix</div>
+              <div style="font-size:1rem; font-weight:800; color:#fff; margin-top:4px;">🎵 Threat Level Mix</div>
               <div style="font-size:0.75rem; color:#CBB7FF; font-weight:700; margin-top:6px;">+ Edit in YouTube / Spotify</div>
             </div>
           </div>
@@ -283,19 +283,19 @@
       <!-- STEP 1: BASICS & CREW -->
       <div class="wiz-step" id="wiz-step-1">
         <label class="field-label" for="wiz-trip-title">Trip or Event Name</label>
-        <input id="wiz-trip-title" class="input input-lg" type="text" placeholder="e.g. Vegas Bachelor Run, Northern Roadtrip..." maxlength="60">
+        <input id="wiz-trip-title" class="input input-lg" type="text" placeholder="e.g. Party at Dunder Mifflin, Niagara Falls Run..." maxlength="60">
 
         <div class="preset-chips" style="margin-top:8px;">
+          <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Party at Dunder Mifflin">🏆 Party at Dunder Mifflin</button>
           <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Epic Road Trip">🛣️ Epic Road Trip</button>
           <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Bachelor Party Run">🍾 Bachelor Party</button>
           <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Spring Break Crew">🌴 Spring Break</button>
-          <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Weekend Getaway">🏔️ Weekend Getaway</button>
         </div>
 
         <label class="field-label" style="margin-top:18px;">Who’s in the Crew?</label>
         <p class="muted" style="margin:0 0 8px;">Add everyone riding or splitting costs together.</p>
         <div class="input-row">
-          <input id="wiz-person-input" class="input" type="text" placeholder="Type a name (e.g. Alex)..." maxlength="24">
+          <input id="wiz-person-input" class="input" type="text" placeholder="Type a name (e.g. Kevin, Kelly)..." maxlength="24">
           <button id="wiz-add-person-btn" class="btn btn-lime" type="button">+ Add</button>
         </div>
         <div id="wiz-crew-chips" class="crew-chip-list"></div>
@@ -360,9 +360,9 @@
         <div id="wiz-cfg-playlist" class="wiz-cfg-block">
           <label class="field-label">🎵 Shared Playlist URL <span class="muted">(YouTube Music, Spotify, or Apple Music)</span></label>
           <input id="wiz-playlist-url" class="input" type="url" placeholder="https://music.youtube.com/playlist?list=... or Spotify link">
-          <input id="wiz-playlist-title" class="input" style="margin-top:8px;" type="text" placeholder="Playlist Name (e.g. Roadtrip Bangers)">
+          <input id="wiz-playlist-title" class="input" style="margin-top:8px;" type="text" placeholder="Playlist Name (e.g. Threat Level Midnight Mix)">
           <div style="margin-top:6px;">
-            <button id="wiz-sample-playlist-btn" class="subtle-pill-btn" type="button">Use Dangerous.Business YTM Playlist</button>
+            <button id="wiz-sample-playlist-btn" class="subtle-pill-btn" type="button">Use Sample Roadtrip Playlist</button>
           </div>
         </div>
 
@@ -504,13 +504,13 @@
       <!-- App Top Header -->
       <header class="topbar">
         <button id="who-picker-btn" class="who-btn" type="button">
-          <div class="avatar-circle avatar-tim" id="who-avatar">T</div>
+          <div class="avatar-circle avatar-tim" id="who-avatar">M</div>
           <div>
             <div class="who-kicker">
-              <span id="header-trip-name">Roadtrip</span>
+              <span id="header-trip-name">Party at Dunder Mifflin</span>
               <span id="header-lock-badge" class="lock-mini hidden">🔒</span>
             </div>
-            <div class="who-name">Hey, <span id="who-label">Tim</span> <span class="who-caret">▾</span></div>
+            <div class="who-name">Hey, <span id="who-label">Michael</span> <span class="who-caret">▾</span></div>
           </div>
         </button>
 
@@ -598,7 +598,7 @@
             <div class="qa-label">Add<br>Expense</div>
           </button>
 
-          <a class="qa-btn" id="qa-song-btn" data-requires="playlist" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
+          <a class="qa-btn" id="qa-song-btn" data-requires="playlist" href="https://music.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI" target="_blank" rel="noopener">
             <div class="qa-circle" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 17.5V6l9-1.8V15.5"/>
@@ -660,10 +660,10 @@
             <button class="link-btn" id="home-goto-music" type="button">Player →</button>
           </div>
 
-          <a id="home-music-link" class="track-row" style="text-decoration:none; color:inherit; margin-bottom:0;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
+          <a id="home-music-link" class="track-row" style="text-decoration:none; color:inherit; margin-bottom:0;" href="https://music.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI" target="_blank" rel="noopener">
             <div class="music-app-badge" aria-hidden="true">🎵</div>
             <div class="track-info">
-              <div class="track-title" id="home-music-title">Dangerous.Business Playlist</div>
+              <div class="track-title" id="home-music-title">Threat Level Midnight Mix</div>
               <div class="track-meta" id="home-music-sub">Tap to open &amp; edit playlist directly</div>
             </div>
             <span class="btn btn-sm btn-lime">Edit ↗</span>
@@ -792,7 +792,7 @@
             <div id="yt-player-mount"></div>
           </div>
 
-          <a id="vibe-edit-playlist-link" class="btn btn-lime btn-full" style="margin-top:14px; font-size:1.05rem; padding:15px 16px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
+          <a id="vibe-edit-playlist-link" class="btn btn-lime btn-full" style="margin-top:14px; font-size:1.05rem; padding:15px 16px;" href="https://music.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI" target="_blank" rel="noopener">
             + Add or Edit Songs in Playlist ↗
           </a>
           <div class="muted" style="text-align:center; margin-top:8px;">
