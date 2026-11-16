@@ -9,6 +9,7 @@
   let appState = null;
   let activePassword = null;
   let pendingEncryptedPayload = null;
+  let pendingMergeContext = null;
   let currentUser = localStorage.getItem('roadtrip_who') || 'Tim';
   let welcomeSelectedUser = null;
   let dirtyCount = 0;
@@ -402,6 +403,7 @@
     closeAllSheets();
     document.getElementById('wizard-modal').classList.add('hidden');
     document.getElementById('unlock-modal').classList.add('hidden');
+    document.getElementById('merge-modal')?.classList.add('hidden');
     document.getElementById('app-view').classList.add('hidden');
     document.getElementById('landing-view').classList.remove('hidden');
 
@@ -418,13 +420,76 @@
     } catch {}
   }
 
-  function enterAppWithState(incomingState, passwordUsed = null) {
-    const localExisting = loadLocalByTripId(incomingState.id);
-    if (localExisting) {
-      appState = mergeTripStates(localExisting, incomingState);
-    } else {
-      appState = normalizeState(incomingState);
-    }
+  function canonicalSignature(raw) {
+    const s = normalizeState(raw);
+    return JSON.stringify({
+      title: s.title,
+      crew: s.crew,
+      modules: s.modules,
+      trip: s.trip,
+      location: { whereAreWe: s.location.whereAreWe, lat: s.location.lat, lon: s.location.lon },
+      expenses: {
+        txs: (s.expenses.transactions || []).map((t) => ({ id: t.id, type: t.type, description: t.description, amount: t.amount, payer: t.payer, payee: t.payee })),
+        del: s.expenses.deletedIds || [],
+      },
+      music: s.music,
+      messages: (s.messages || []).map((m) => ({ id: m.id, text: m.text, author: m.author })),
+    });
+  }
+
+  function sumExpenses(state) {
+    return (state.expenses?.transactions || [])
+      .filter((t) => t.type === 'expense')
+      .reduce((acc, t) => acc + Number(t.amount || 0), 0);
+  }
+
+  function openMergeConfirmationModal(localRaw, incomingRaw, passwordUsed) {
+    const local = normalizeState(localRaw);
+    const incoming = normalizeState(incomingRaw);
+    const merged = mergeTripStates(local, incoming);
+    pendingMergeContext = { local, incoming, merged, passwordUsed };
+
+    document.getElementById('merge-trip-name').textContent = merged.title || 'this trip';
+
+    const locExpCount = local.expenses.transactions.length;
+    const incExpCount = incoming.expenses.transactions.length;
+    const mrgExpCount = merged.expenses.transactions.length;
+
+    const locStopCount = local.trip.stops.length;
+    const incStopCount = incoming.trip.stops.length;
+    const mrgStopCount = merged.trip.stops.length;
+
+    const locNoteCount = local.messages.length;
+    const incNoteCount = incoming.messages.length;
+    const mrgNoteCount = merged.messages.length;
+
+    const diffBox = document.getElementById('merge-diff-summary');
+    diffBox.innerHTML = `
+      <div class="merge-diff-row">
+        <span class="muted">💳 Expenses</span>
+        <span>Device: <strong>${locExpCount} ($${sumExpenses(local).toFixed(0)})</strong> · Link: <strong>${incExpCount} ($${sumExpenses(incoming).toFixed(0)})</strong> → <strong style="color:var(--lime);">Merged: ${mrgExpCount}</strong></span>
+      </div>
+      <div class="merge-diff-row">
+        <span class="muted">📍 Pit Stops</span>
+        <span>Device: <strong>${locStopCount}</strong> · Link: <strong>${incStopCount}</strong> → <strong style="color:var(--lime);">Merged: ${mrgStopCount}</strong></span>
+      </div>
+      <div class="merge-diff-row">
+        <span class="muted">💬 Crew Notes</span>
+        <span>Device: <strong>${locNoteCount}</strong> · Link: <strong>${incNoteCount}</strong> → <strong style="color:var(--lime);">Merged: ${mrgNoteCount}</strong></span>
+      </div>
+      <div class="merge-diff-row">
+        <span class="muted">👥 Crew</span>
+        <span><strong>${esc(merged.crew.join(', '))}</strong></span>
+      </div>`;
+
+    document.getElementById('landing-view').classList.add('hidden');
+    document.getElementById('wizard-modal').classList.add('hidden');
+    document.getElementById('unlock-modal').classList.add('hidden');
+    document.getElementById('merge-modal').classList.remove('hidden');
+  }
+
+  function finalizeEnterApp(chosenState, passwordUsed = null, toastMessage = null) {
+    appState = normalizeState(chosenState);
     if (passwordUsed) {
       activePassword = passwordUsed;
       appState.encrypted = true;
@@ -444,9 +509,9 @@
     document.getElementById('landing-view').classList.add('hidden');
     document.getElementById('wizard-modal').classList.add('hidden');
     document.getElementById('unlock-modal').classList.add('hidden');
+    document.getElementById('merge-modal')?.classList.add('hidden');
     document.getElementById('app-view').classList.remove('hidden');
 
-    // Show crew welcome picker if user hasn't picked a name on this trip yet
     const welcomedForTrip = localStorage.getItem(`db_welcomed_${appState.id}`) === '1';
     const splash = document.getElementById('welcome-splash');
     if (!welcomedForTrip) {
@@ -460,10 +525,20 @@
     initMap();
     renderAll();
     syncStateToUrl(null);
+    if (toastMessage) showToast(toastMessage);
 
     if (appState.modules.locations && appState.location.lat != null && appState.trip.destination) {
       computeBrowserRouteEta(appState.location.lat, appState.location.lon);
     }
+  }
+
+  function enterAppWithState(incomingState, passwordUsed = null, skipMergePrompt = false) {
+    const localExisting = loadLocalByTripId(incomingState.id);
+    if (localExisting && !skipMergePrompt && canonicalSignature(localExisting) !== canonicalSignature(incomingState)) {
+      openMergeConfirmationModal(localExisting, incomingState, passwordUsed);
+      return;
+    }
+    finalizeEnterApp(incomingState, passwordUsed, null);
   }
 
   async function handleHashRoute() {
@@ -639,7 +714,7 @@
         : [],
     });
 
-    enterAppWithState(newTrip, wizState.security === 'encrypted' ? pw : null);
+    enterAppWithState(newTrip, wizState.security === 'encrypted' ? pw : null, true);
     await syncStateToUrl('New trip created — share link with the crew!');
   }
 
@@ -1465,6 +1540,9 @@
       ? '🔒 Currently encrypted with AES-256-GCM. Clear password and click Apply to switch to a standard link.'
       : '🔗 Currently using a standard unencrypted link. Enter a password and click Apply to encrypt.';
 
+    const hasBackup = Boolean(localStorage.getItem(`db_backup_${appState.id}`));
+    document.getElementById('settings-restore-backup-btn')?.classList.toggle('hidden', !hasBackup);
+
     const defs = [
       { key: 'locations', ico: '📍', name: 'Trip Locations & Stops', desc: 'Live ETA, GPS readout, pit stops & map' },
       { key: 'expenses', ico: '💳', name: 'Trip Expense Splitter', desc: 'Split tabs, donut chart & settlements' },
@@ -1594,7 +1672,7 @@
       document.getElementById(id)?.addEventListener('click', async () => {
         const demo = createDemoTripState();
         localStorage.setItem(`db_welcomed_${demo.id}`, '1');
-        enterAppWithState(demo, null);
+        enterAppWithState(demo, null, true);
         await syncStateToUrl(null);
         showToast('Loaded Live Demo Trip!');
       });
@@ -1605,8 +1683,44 @@
         const saved = JSON.parse(localStorage.getItem(LAST_TRIP_STORAGE_KEY) || 'null');
         if (saved) {
           const cachedPw = sessionStorage.getItem(`db_pw_${saved.id}`) || null;
-          enterAppWithState(saved, cachedPw);
+          enterAppWithState(saved, cachedPw, true);
           await syncStateToUrl(null);
+        }
+      } catch {}
+    });
+
+    // Smart Merge Confirmation Modal Buttons
+    document.getElementById('merge-confirm-btn')?.addEventListener('click', () => {
+      if (!pendingMergeContext) return;
+      const { local, merged, passwordUsed } = pendingMergeContext;
+      try { localStorage.setItem(`db_backup_${local.id}`, JSON.stringify(local)); } catch {}
+      pendingMergeContext = null;
+      finalizeEnterApp(merged, passwordUsed, 'Smart Merge complete (backup saved)!');
+    });
+
+    document.getElementById('merge-keep-local-btn')?.addEventListener('click', () => {
+      if (!pendingMergeContext) return;
+      const { local, passwordUsed } = pendingMergeContext;
+      pendingMergeContext = null;
+      finalizeEnterApp(local, passwordUsed, 'Kept your device version!');
+    });
+
+    document.getElementById('merge-use-incoming-btn')?.addEventListener('click', () => {
+      if (!pendingMergeContext) return;
+      const { local, incoming, passwordUsed } = pendingMergeContext;
+      try { localStorage.setItem(`db_backup_${local.id}`, JSON.stringify(local)); } catch {}
+      pendingMergeContext = null;
+      finalizeEnterApp(incoming, passwordUsed, 'Loaded incoming link (backup saved)!');
+    });
+
+    document.getElementById('settings-restore-backup-btn')?.addEventListener('click', async () => {
+      if (!appState) return;
+      try {
+        const raw = localStorage.getItem(`db_backup_${appState.id}`);
+        if (raw) {
+          const backup = JSON.parse(raw);
+          closeAllSheets();
+          finalizeEnterApp(backup, activePassword, 'Restored pre-merge backup!');
         }
       } catch {}
     });

@@ -513,6 +513,56 @@ body {
   font-size: 0.84rem;
 }
 
+.creator-link {
+  color: var(--lime);
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(200, 255, 61, 0.45);
+}
+
+.creator-link:hover {
+  border-bottom-style: solid;
+}
+
+.merge-warn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: #FBBF24;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.merge-diff-box {
+  background: var(--card-soft);
+  border: 1px solid var(--border-hi);
+  border-radius: 18px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.merge-diff-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.merge-diff-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
 /* =========================================================
    NEW TRIP WIZARD & UNLOCK MODAL
    ========================================================= */

@@ -259,6 +259,7 @@
 
     <footer class="landing-footer">
       <div><strong>Dangerous.Business</strong> — 100% Client-Side • URL-Driven • Web Crypto AES-256-GCM</div>
+      <div style="margin-top:8px;">Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a></div>
     </footer>
   </div>
 
@@ -430,6 +431,36 @@
         <button class="btn btn-lime btn-full btn-xl" style="margin-top:12px;" type="submit">Unlock Trip →</button>
       </form>
       <button id="unlock-back-home-btn" class="subtle-pill-btn" style="margin-top:14px;" type="button">← Back to Landing Page</button>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VIEW 3B: SMART MERGE WARNING & CONFIRMATION MODAL
+       ========================================================= -->
+  <div id="merge-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="merge-modal-title">
+    <div class="wizard-card" style="max-width:500px;">
+      <div class="merge-warn-badge">⚠️ DATA PROTECTION CHECK</div>
+      <h2 class="wizard-title" id="merge-modal-title" style="margin-top:6px;">Confirm Smart Merge?</h2>
+      <p class="muted" style="margin:6px 0 14px;">
+        This device already has a saved copy of <strong id="merge-trip-name" style="color:#fff;">this trip</strong>, and the link you opened contains different updates. Choose how to proceed so no data is accidentally lost:
+      </p>
+
+      <div id="merge-diff-summary" class="merge-diff-box"></div>
+
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <button id="merge-confirm-btn" class="btn btn-lime btn-full btn-lg" type="button">
+          ✓ Smart Merge Both (Recommended)
+        </button>
+        <button id="merge-keep-local-btn" class="btn btn-purple btn-full" type="button">
+          🔒 Keep Only My Device’s Version
+        </button>
+        <button id="merge-use-incoming-btn" class="btn btn-full" type="button">
+          📥 Replace with Incoming Link Only
+        </button>
+      </div>
+      <div class="muted" style="text-align:center; font-size:0.75rem; margin-top:10px;">
+        A safety backup of your device’s current version is saved automatically before merging.
+      </div>
     </div>
   </div>
 
@@ -958,8 +989,12 @@
       <div class="muted" style="margin-top:6px; font-size:0.76rem;" id="settings-enc-status"></div>
 
       <div class="sheet-who-footer" style="margin-top:18px;">
+        <button id="settings-restore-backup-btn" class="btn btn-purple hidden" type="button">⏪ Restore Pre-Merge Backup</button>
         <button id="settings-new-trip-btn" class="btn" type="button">+ Start New Trip</button>
         <button id="settings-go-landing-btn" class="btn" type="button">Landing Page</button>
+      </div>
+      <div style="text-align:center; margin-top:14px; font-size:0.78rem;" class="muted">
+        Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a>
       </div>
     </div>
   </div>
