@@ -7,12 +7,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Roadtrip">
-  <title>Roadtrip Companion</title>
+  <meta name="apple-mobile-web-app-title" content="Dangerous.Business">
+  <title>Dangerous.Business — Coordinate Without Big Brother</title>
+  <meta name="description" content="Zero-account, URL-driven group coordination with optional AES-256 encryption. Built for epic road trips, bachelor parties, and spring break.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" href="./icons/icon-192.png">
-  <script>try{if(localStorage.getItem('roadtrip_welcomed_v3')==='1')document.documentElement.classList.add('welcomed');}catch{}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -22,435 +22,966 @@
   <div class="ambient-glow"></div>
   <div class="ambient-glow-2"></div>
 
-  <!-- FIRST-VISIT WELCOME SPLASH SCREEN -->
-  <section id="welcome-splash" class="welcome-splash" aria-label="Welcome to Roadtrip">
-    <div class="welcome-aurora welcome-aurora-a"></div>
-    <div class="welcome-aurora welcome-aurora-b"></div>
-    <div class="welcome-grid-bg"></div>
-
-    <div class="welcome-inner">
-      <div class="welcome-header">
-        <div class="welcome-emblem" aria-hidden="true">
-          <svg viewBox="0 0 64 64" fill="none">
+  <!-- =========================================================
+       VIEW 1: PRODUCT LANDING PAGE
+       ========================================================= -->
+  <div id="landing-view" class="landing-view">
+    <header class="landing-nav">
+      <a href="./" class="brand-lockup" id="landing-brand-link">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect x="1.5" y="1.5" width="37" height="37" rx="12" fill="#121521" stroke="rgba(200,255,61,0.4)" stroke-width="1.5"/>
+            <path d="M10 29C10 19 28 23 29 11" stroke="url(#bGrad)" stroke-width="3.4" stroke-linecap="round"/>
+            <circle cx="10" cy="29" r="3" fill="#9D7BFF"/>
+            <circle cx="29" cy="11" r="4.2" fill="#C8FF3D"/>
             <defs>
-              <linearGradient id="wRouteGrad" x1="12" y1="50" x2="52" y2="14" gradientUnits="userSpaceOnUse">
+              <linearGradient id="bGrad" x1="10" y1="29" x2="29" y2="11" gradientUnits="userSpaceOnUse">
                 <stop offset="0" stop-color="#9D7BFF"/>
-                <stop offset="0.55" stop-color="#5CE1FF"/>
                 <stop offset="1" stop-color="#C8FF3D"/>
               </linearGradient>
             </defs>
-            <rect x="2" y="2" width="60" height="60" rx="20" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
-            <path d="M16 47 C16 31 46 37 47 18" stroke="url(#wRouteGrad)" stroke-width="4.5" stroke-linecap="round"/>
-            <circle cx="16" cy="47" r="4" fill="#9D7BFF"/>
-            <circle cx="31.5" cy="32.5" r="3" fill="#FFFFFF"/>
-            <circle cx="47" cy="18" r="6" fill="#C8FF3D"/>
-            <circle cx="47" cy="18" r="2.2" fill="#07080D"/>
           </svg>
         </div>
-        <div class="welcome-trip-pill" id="welcome-trip-pill">DANGEROUS BUSINESS</div>
-        <h1 class="welcome-title">Welcome aboard!</h1>
-        <p class="welcome-sub">Everything for our drive in one easy place.</p>
-      </div>
-
-      <div class="welcome-features">
-        <div class="wf-card">
-          <div class="wf-icon lime" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 21s-6-5.3-6-11a6 6 0 1 1 12 0c0 5.7-6 11-6 11z"/>
-              <circle cx="12" cy="10" r="2.3"/>
-            </svg>
-          </div>
-          <div>
-            <div class="wf-title">Where We Are &amp; Stops</div>
-            <div class="wf-desc">Live arrival time, town updates, and 1-tap coffee or gas stops.</div>
-          </div>
-        </div>
-
-        <div class="wf-card">
-          <div class="wf-icon sky" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2.5" y="5.5" width="19" height="13" rx="3"/>
-              <path d="M2.5 10h19"/>
-              <path d="M7 15h4"/>
-            </svg>
-          </div>
-          <div>
-            <div class="wf-title">Easy Bill Split</div>
-            <div class="wf-desc">Add gas, food &amp; hotel costs—no math needed.</div>
-          </div>
-        </div>
-
-        <div class="wf-card">
-          <div class="wf-icon purple" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 18V5l11-2v13"/>
-              <circle cx="6.5" cy="18" r="2.5"/>
-              <circle cx="17.5" cy="16" r="2.5"/>
-            </svg>
-          </div>
-          <div>
-            <div class="wf-title">Car DJ &amp; Notes</div>
-            <div class="wf-desc">Open our shared YouTube Music playlist to add songs &amp; drop car notes.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="welcome-picker-wrap">
-        <div class="welcome-picker-label">Who's holding this phone?</div>
-        <div class="welcome-crew-grid" id="welcome-crew-grid"></div>
-      </div>
-
-      <button id="welcome-go-btn" class="welcome-cta" type="button" disabled>
-        <span>Tap your name above</span>
-      </button>
-    </div>
-  </section>
-
-  <div class="app-shell">
-    <!-- Clean 1-Row App Header -->
-    <header class="topbar">
-      <button id="who-picker-btn" class="who-btn" type="button">
-        <div class="avatar-circle" id="who-avatar">T</div>
         <div>
-          <div class="who-kicker">Riding along</div>
-          <div class="who-name">Hey, <span id="who-label">Tim</span> <span class="who-caret">▾</span></div>
+          <div class="brand-name">Dangerous<span class="lime-text">.Business</span></div>
+          <div class="brand-tag">ZERO-CLOUD COORDINATION</div>
         </div>
-      </button>
+      </a>
 
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span id="offline-dot" class="offline-pill hidden">Offline</span>
-        <button id="gps-toggle-btn" class="gps-pill" type="button">
-          <span class="dot"></span>
-          <span id="gps-btn-label">Share Location</span>
-        </button>
+      <nav class="landing-links">
+        <a href="#how-it-works">How It Works</a>
+        <a href="#modules-sec">Modules</a>
+        <a href="#use-cases">Use Cases</a>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <button id="nav-demo-btn" class="btn btn-sm" type="button">Load Demo</button>
+        <button id="nav-start-btn" class="btn btn-sm btn-lime" type="button">Start a Trip →</button>
       </div>
     </header>
 
-    <!-- TAB 1: HOME OVERVIEW -->
-    <main id="tab-home" class="tab-panel active">
-      <!-- Hero Trip Card -->
-      <section class="hero-card">
-        <div class="hero-top">
-          <span class="dest-eyebrow" id="hero-dest-eyebrow">NO DESTINATION SET</span>
-          <button id="open-dest-sheet-btn" class="subtle-pill-btn" type="button">Edit</button>
+    <!-- HERO -->
+    <section class="landing-hero">
+      <div class="hero-copy-col">
+        <div class="eyebrow-pill">
+          <span class="pulse-dot"></span>
+          <span>NO ACCOUNTS • NO CLOUD DB • AES-256 URL VAULT</span>
         </div>
 
-        <div class="hero-time-row">
-          <div class="hero-time" id="hero-time-left">—</div>
-          <div class="eta-badge" id="hero-eta-badge">ETA —</div>
+        <h1 class="landing-h1">
+          Coordinate the crew.<br>
+          <span class="grad-headline">Leave zero cloud trail.</span>
+        </h1>
+
+        <p class="landing-lead">
+          Whether it’s an epic road trip, a bachelor run, or spring break—<strong>Dangerous.Business</strong> packs your live route, split tabs, shared playlists, and crew notes entirely inside a single shareable link. Lock it with a password so only your chat thread can read it.
+        </p>
+
+        <div class="landing-cta-row">
+          <button id="hero-start-btn" class="btn btn-lime btn-xl" type="button">
+            <span>Start a New Trip</span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <button id="hero-demo-btn" class="btn btn-purple btn-xl" type="button">
+            <span>⚡ Load Demo Trip</span>
+          </button>
         </div>
 
-        <div class="where-box">
-          <div class="where-label">Where We Are</div>
-          <div class="where-text" id="hero-where">Tap "Share Location" above to start</div>
-          <div class="where-meta" id="hero-updated">Waiting for first GPS update</div>
+        <div id="resume-trip-banner" class="resume-banner hidden">
+          <div class="resume-banner-info">
+            <span class="resume-kicker">SAVED ON THIS DEVICE</span>
+            <strong id="resume-trip-title">Previous Trip</strong>
+          </div>
+          <button id="resume-trip-btn" class="btn btn-sm btn-lime" type="button">Resume →</button>
         </div>
 
-        <div class="progress-track">
-          <div class="progress-fill" id="progress-fill"></div>
-        </div>
-
-        <div class="hero-stats">
-          <div class="hero-stat-item">
-            <div class="stat-k">Distance Left</div>
-            <div class="stat-v" id="m-miles-left">—</div>
+        <div class="trust-strip">
+          <div class="trust-item">
+            <strong>100% URL-Driven</strong>
+            <span>State lives in the link</span>
           </div>
-          <div class="hero-stat-item">
-            <div class="stat-k">Speed</div>
-            <div class="stat-v" id="m-speed">—</div>
+          <div class="trust-item">
+            <strong>AES-256-GCM</strong>
+            <span>Optional password lock</span>
           </div>
-          <div class="hero-stat-item">
-            <div class="stat-k">Next Stop</div>
-            <div class="stat-v stat-v-stop" id="m-next-stop">None</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Signature 4 Circular Quick Actions -->
-      <section class="quick-actions">
-        <button class="qa-btn accent" id="qa-stop-btn" type="button">
-          <div class="qa-circle" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-          </div>
-          <div class="qa-label">Add<br>Stop</div>
-        </button>
-        <button class="qa-btn purple" id="qa-cost-btn" type="button">
-          <div class="qa-circle" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3v18"/>
-              <path d="M16.5 7.5a4 4 0 0 0-4.5-2.5c-2.5 0-4.2 1.3-4.2 3.3 0 4.3 9.2 2.2 9.2 6.8 0 2.1-1.9 3.6-4.7 3.6-2.4 0-4.1-.9-4.9-2.5"/>
-            </svg>
-          </div>
-          <div class="qa-label">Add<br>Cost</div>
-        </button>
-        <a class="qa-btn" id="qa-song-btn" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
-          <div class="qa-circle" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 17.5V6l9-1.8V15.5"/>
-              <circle cx="6.5" cy="17.5" r="2.5" fill="currentColor" stroke="none"/>
-              <circle cx="15.5" cy="15.5" r="2.5" fill="currentColor" stroke="none"/>
-            </svg>
-          </div>
-          <div class="qa-label">Add<br>Song</div>
-        </a>
-        <button class="qa-btn" id="qa-msg-btn" type="button">
-          <div class="qa-circle" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-.9L3 20.5l1.6-4.8A8.5 8.5 0 1 1 21 11.5z"/>
-              <circle cx="9.2" cy="11.5" r="1" fill="currentColor" stroke="none"/>
-              <circle cx="12.5" cy="11.5" r="1" fill="currentColor" stroke="none"/>
-              <circle cx="15.8" cy="11.5" r="1" fill="currentColor" stroke="none"/>
-            </svg>
-          </div>
-          <div class="qa-label">Note</div>
-        </button>
-      </section>
-
-      <!-- Add to Home Screen Prompt Card (hidden if already installed / dismissed) -->
-      <section id="install-banner" class="install-card hidden" aria-label="Save to Home Screen">
-        <img src="./icons/icon-192.png" alt="Roadtrip App Icon" class="install-icon">
-        <div class="install-copy">
-          <div class="install-title">Add to Home Screen</div>
-          <div class="install-sub" id="install-banner-sub">Save as an app for 1-tap access all trip</div>
-        </div>
-        <button id="install-banner-btn" class="btn btn-lime btn-sm install-cta" type="button">Add</button>
-        <button id="install-banner-close" class="install-close" type="button" aria-label="Dismiss install prompt">✕</button>
-      </section>
-
-      <!-- Money Snapshot Card (Dribbble Balance + Donut Preview) -->
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Trip Costs</div>
-          <button class="link-btn" id="home-goto-split" type="button">See All →</button>
-        </div>
-
-        <div class="money-row">
-          <div>
-            <div class="muted">Total spent so far</div>
-            <div class="money-big" id="home-total-spent">$0.00</div>
-            <div id="home-my-balance" class="balance-badge even">Everyone is even</div>
-          </div>
-          <div class="donut-box">
-            <svg id="home-donut" viewBox="0 0 100 100" class="donut-svg"></svg>
-            <span class="donut-center-label">SPLIT</span>
+          <div class="trust-item">
+            <strong>Smart Merge</strong>
+            <span>Combines crew updates</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      <!-- Car Vibe Preview Card (Music + Latest Note) -->
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Car Vibe</div>
-          <button class="link-btn" id="home-goto-vibe" type="button">Music &amp; Chat →</button>
-        </div>
-
-        <a id="home-music-link" class="track-row" style="text-decoration:none; color:inherit; margin-bottom:10px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
-          <div class="music-app-badge" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 18V5l11-2v13"/>
-              <circle cx="6.5" cy="18" r="2.5" fill="currentColor" stroke="none"/>
-              <circle cx="17.5" cy="16" r="2.5" fill="currentColor" stroke="none"/>
-            </svg>
+      <!-- Visual Product Mockup Card -->
+      <div class="hero-preview-col" aria-hidden="true">
+        <div class="preview-phone">
+          <div class="preview-url-bar">
+            <span class="lock-tag">🔒 AES-256</span>
+            <span class="url-text">dangerous.business/#e=9xK2mP7vQ...</span>
+            <span class="url-share-Chip">Share ↗</span>
           </div>
-          <div class="track-info">
-            <div class="track-title" id="home-music-title">Dangerous.Business Playlist</div>
-            <div class="track-meta" id="home-music-sub">Tap to add or edit in YouTube Music</div>
+
+          <div class="preview-hero-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="dest-eyebrow">BACHELOR RUN • TO LAS VEGAS</span>
+              <span class="eta-badge">ETA 4:15 PM</span>
+            </div>
+            <div class="preview-big-stat">3h 40m <span class="unit">left</span></div>
+            <div class="preview-where">
+              <div class="where-label">WHERE WE ARE</div>
+              <div style="font-size:1.25rem; font-weight:800; color:#fff;">On I-15 S • Near Baker, CA</div>
+            </div>
           </div>
-          <span class="btn btn-sm btn-lime">Edit ↗</span>
-        </a>
 
-        <div id="home-latest-msgs"></div>
-      </section>
-    </main>
+          <div class="preview-mini-grid">
+            <div class="preview-mini-card">
+              <div class="muted" style="font-size:0.72rem; font-weight:700;">SPLIT TAB</div>
+              <div style="font-size:1.45rem; font-weight:800; color:#fff; margin-top:2px;">$1,480</div>
+              <div style="font-size:0.75rem; color:var(--lime); font-weight:800; margin-top:4px;">Tim gets back $420</div>
+            </div>
+            <div class="preview-mini-card">
+              <div class="muted" style="font-size:0.72rem; font-weight:700;">SHARED PLAYLIST</div>
+              <div style="font-size:1rem; font-weight:800; color:#fff; margin-top:4px;">🎵 Desert Run Mix</div>
+              <div style="font-size:0.75rem; color:#CBB7FF; font-weight:700; margin-top:6px;">+ Edit in YouTube / Spotify</div>
+            </div>
+          </div>
 
-    <!-- TAB 2: STOPS & MAP -->
-    <main id="tab-stops" class="tab-panel">
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Quick Pit Stops</div>
-          <button class="btn btn-sm btn-lime" id="stops-search-open-btn" type="button">+ Search Place</button>
-        </div>
-        <div class="pit-grid">
-          <button class="pit-tile quick-stop-chip" type="button" data-q="cafe"><span>☕</span> Coffee nearby</button>
-          <button class="pit-tile quick-stop-chip" type="button" data-q="gas station"><span>⛽</span> Gas nearby</button>
-          <button class="pit-tile quick-stop-chip" type="button" data-q="restaurant"><span>🍔</span> Food nearby</button>
-          <button class="pit-tile quick-stop-chip" type="button" data-q="rest area"><span>🚻</span> Rest area</button>
-        </div>
-        <div id="stops-tab-results" class="search-results hidden"></div>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Our Route</div>
-          <div style="display:flex; gap:6px;">
-            <a id="gmaps-route-link" class="btn btn-sm btn-lime hidden" target="_blank" rel="noopener">Google Maps</a>
-            <a id="waze-next-link" class="btn btn-sm btn-purple hidden" target="_blank" rel="noopener">Waze</a>
+          <div class="preview-share-cta">
+            <span>📤 Share the Update</span>
+            <span class="preview-badge">2 new</span>
           </div>
         </div>
-        <div id="stops-list"></div>
-      </section>
+      </div>
+    </section>
 
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Live Map</div>
-          <button id="center-map-btn" class="btn btn-sm" type="button">Center on Car</button>
-        </div>
-        <div id="map"></div>
-      </section>
-    </main>
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" class="landing-section">
+      <div class="section-header">
+        <div class="section-eyebrow">HOW IT WORKS</div>
+        <h2 class="section-title">No servers. No logins. Just pass the link.</h2>
+        <p class="section-sub">Designed so anyone in the car or group chat can use it in seconds—even if they aren't tech-savvy.</p>
+      </div>
 
-    <!-- TAB 3: SPLIT COSTS (Cohesive TripSplitter) -->
-    <main id="tab-split" class="tab-panel">
-      <iframe id="ts-iframe" class="ts-iframe" src="./tripsplitter.html?embed=1" title="Trip Splitter"></iframe>
-    </main>
-
-    <!-- TAB 4: MUSIC & CHAT -->
-    <main id="tab-vibe" class="tab-panel">
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Roadtrip Music</div>
-          <button id="refresh-playlist-btn" class="subtle-pill-btn" type="button">↻ Sync List</button>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h3>Pick Your Modules</h3>
+          <p>Start a trip in 20 seconds. Toggle on only what your crew needs: <strong>Trip Locations</strong>, <strong>Expense Splitter</strong>, <strong>Shared Playlist</strong>, or <strong>Crew Notes</strong>. Add an optional password to encrypt the URL.</p>
         </div>
 
-        <div class="player-wrap">
-          <div id="yt-player-mount"></div>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:10px;">
-          <span class="muted" id="now-playing-label">Playing Dangerous.Business playlist</span>
-          <button id="play-playlist-btn" class="subtle-pill-btn" type="button">Full Playlist</button>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h3>Log Stops, Tabs &amp; Location</h3>
+          <p>Anyone on the trip can tap their name, drop a gas or hotel receipt, add a coffee stop along the route, or snapshot the car's current GPS location.</p>
         </div>
 
-        <a id="vibe-edit-playlist-link" class="btn btn-lime btn-full" style="margin-top:14px; font-size:1rem; padding:14px 16px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
-          + Add or Edit Songs in YouTube Music ↗
-        </a>
-        <div class="muted" style="text-align:center; margin-top:8px;">
-          Opens the shared playlist directly in YouTube Music so anyone can add, remove, or reorder songs — then tap <strong>Sync List</strong> above.
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h3>Tap “Share the Update”</h3>
+          <p>Hit the big <strong>Share the Update</strong> button to beam the updated link straight to iMessage, Signal, or WhatsApp. Opening a newer link automatically merges everyone's additions.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULAR FEATURE SHOWCASE -->
+    <section id="modules-sec" class="landing-section">
+      <div class="section-header">
+        <div class="section-eyebrow">MODULAR BY DESIGN</div>
+        <h2 class="section-title">Four powerful tools. Mix and match per trip.</h2>
+        <p class="section-sub">Include all four for an all-out roadtrip, or pick just Expense Splitter &amp; Notes for a weekend getaway.</p>
+      </div>
+
+      <div class="modules-showcase-grid">
+        <div class="mod-card">
+          <div class="mod-icon lime">📍</div>
+          <div class="mod-tag">MODULE 01</div>
+          <h3>Trip Locations &amp; Pit Stops</h3>
+          <p>Kills the <em>“Are we there yet?”</em> question forever. Big glanceable countdown, plain-English town/highway readout, 1-tap nearby coffee/gas search, and instant Google Maps &amp; Waze handoff.</p>
         </div>
 
-        <details open style="margin-top:14px;">
-          <summary id="playlist-count-label" class="muted" style="cursor:pointer; font-weight:800; color:#E2E8F0;">Playlist Tracks</summary>
-          <div id="playlist-tracks-list" style="margin-top:10px;"></div>
-        </details>
-      </section>
-
-      <section class="card">
-        <div class="card-head">
-          <div class="card-title">Car Chat</div>
-        </div>
-        <div class="msg-list" id="msg-list"></div>
-
-        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;">
-          <button class="subtle-pill-btn quick-msg-chip" type="button">☕ Coffee soon?</button>
-          <button class="subtle-pill-btn quick-msg-chip" type="button">⛽ Gas check</button>
-          <button class="subtle-pill-btn quick-msg-chip" type="button">🎶 Love this song</button>
-          <button class="subtle-pill-btn quick-msg-chip" type="button">📸 Look outside!</button>
+        <div class="mod-card">
+          <div class="mod-icon purple">💳</div>
+          <div class="mod-tag">MODULE 02</div>
+          <h3>Expense Splitter</h3>
+          <p>Log hotels, gas, dinner, or rounds in seconds. Automatically calculates who owes whom with the fewest possible transfers—plus a live spending donut chart.</p>
         </div>
 
-        <form id="msg-form" class="input-row" style="margin-top:10px;">
-          <input id="msg-input" class="input" type="text" placeholder="Say something to the car..." required>
-          <button class="btn btn-lime" type="submit">Send</button>
-        </form>
-      </section>
-    </main>
+        <div class="mod-card">
+          <div class="mod-icon sky">🎵</div>
+          <div class="mod-tag">MODULE 03</div>
+          <h3>Shared Music Playlist</h3>
+          <p>Link any collaborative <strong>YouTube Music</strong>, <strong>Spotify</strong>, or <strong>Apple Music</strong> playlist. Plays right inside the dashboard with a big 1-tap button so the whole crew can add songs directly.</p>
+        </div>
+
+        <div class="mod-card">
+          <div class="mod-icon coral">💬</div>
+          <div class="mod-tag">MODULE 04</div>
+          <h3>Crew Board &amp; Notes</h3>
+          <p>Pin Airbnb door codes, hotel room numbers, rally times, or quick car notes stamped with where you were when you posted them.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- USE CASES -->
+    <section id="use-cases" class="landing-section">
+      <div class="section-header">
+        <div class="section-eyebrow">BUILT FOR DANGEROUS BUSINESS</div>
+        <h2 class="section-title">When you don't want the cloud watching.</h2>
+      </div>
+
+      <div class="usecases-grid">
+        <div class="uc-card">
+          <div class="uc-emoji">🍾</div>
+          <h3>Bachelor &amp; Bachelorette Parties</h3>
+          <p>Split bottle service, house rentals, and Ubers without leaving permanent public Venmo feeds or forcing 12 people to download an app and create accounts.</p>
+        </div>
+        <div class="uc-card">
+          <div class="uc-emoji">🛣️</div>
+          <h3>Epic Road Trips</h3>
+          <p>Built with giant, high-contrast typography so passengers in the backseat can see the ETA, current town, next stop, and shared playlist at a single glance.</p>
+        </div>
+        <div class="uc-card">
+          <div class="uc-emoji">🌴</div>
+          <h3>Spring Break &amp; Vegas Runs</h3>
+          <p>Keep door codes, meetup spots, shared playlists, and group tabs locked behind a trip password. Share updates over Signal or iMessage with zero server footprint.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM CTA -->
+    <section class="landing-bottom-cta">
+      <h2>Ready to roll?</h2>
+      <p>Spin up an encrypted, modular trip link in under 30 seconds—or test drive the live demo first.</p>
+      <div class="landing-cta-row" style="justify-content:center;">
+        <button id="footer-start-btn" class="btn btn-lime btn-xl" type="button">Start a New Trip →</button>
+        <button id="footer-demo-btn" class="btn btn-xl" type="button">⚡ Load Demo Trip</button>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <div><strong>Dangerous.Business</strong> — 100% Client-Side • URL-Driven • Web Crypto AES-256-GCM</div>
+    </footer>
   </div>
 
-  <!-- Native Fixed Bottom Tab Bar (Dimensional Vector Icons) -->
-  <nav class="bottom-nav" role="tablist">
-    <button class="nav-item active" data-tab="home" type="button">
-      <span class="nav-icon" aria-hidden="true">
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="icoHomeRoof" x1="5" y1="6" x2="31" y2="18" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#FF7A59"/>
-              <stop offset="1" stop-color="#D9482B"/>
-            </linearGradient>
-            <linearGradient id="icoHomeWall" x1="8" y1="15" x2="28" y2="33" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#FFF2DC"/>
-              <stop offset="1" stop-color="#E6CFAF"/>
-            </linearGradient>
-          </defs>
-          <path d="M8 16.5L18 8L28 16.5V30C28 31.1 27.1 32 26 32H10C8.9 32 8 31.1 8 30V16.5Z" fill="url(#icoHomeWall)"/>
-          <path d="M5 17L18 6L31 17C31.7 17.6 31.3 18.8 30.3 18.8H28.5L18 9.9L7.5 18.8H5.7C4.7 18.8 4.3 17.6 5 17Z" fill="url(#icoHomeRoof)"/>
-          <rect x="21" y="19" width="4.5" height="5" rx="1.2" fill="#5CC8FF"/>
-          <path d="M12.5 32V22.5C12.5 21.4 13.4 20.5 14.5 20.5H16.5C17.6 20.5 18.5 21.4 18.5 22.5V32H12.5Z" fill="#7D5A44"/>
-          <rect x="6" y="31" width="24" height="2" rx="1" fill="#63C74D"/>
-        </svg>
-      </span>
-      <span>Home</span>
-    </button>
+  <!-- =========================================================
+       VIEW 2: NEW TRIP WIZARD MODAL (4 STEPS)
+       ========================================================= -->
+  <div id="wizard-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="wiz-heading">
+    <div class="wizard-card">
+      <div class="wizard-top">
+        <div>
+          <div class="dest-eyebrow" id="wiz-step-indicator">STEP 1 OF 4</div>
+          <h2 class="wizard-title" id="wiz-heading">Name Your Trip &amp; Crew</h2>
+        </div>
+        <button id="wiz-close-btn" class="subtle-pill-btn" type="button">Cancel</button>
+      </div>
 
-    <button class="nav-item" data-tab="stops" type="button">
-      <span class="nav-icon" aria-hidden="true">
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="icoMapSeaL" x1="4" y1="8" x2="14" y2="30" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#D7F4FF"/>
-              <stop offset="1" stop-color="#9BE2FF"/>
-            </linearGradient>
-            <linearGradient id="icoMapSeaM" x1="14" y1="8" x2="22" y2="30" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#8FD9FF"/>
-              <stop offset="1" stop-color="#58BFFF"/>
-            </linearGradient>
-            <linearGradient id="icoMapSeaR" x1="22" y1="8" x2="32" y2="30" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#CFEFFF"/>
-              <stop offset="1" stop-color="#89D6FF"/>
-            </linearGradient>
-          </defs>
-          <path d="M4.5 10.5L13.5 7V27.5L4.5 31V10.5Z" fill="url(#icoMapSeaL)"/>
-          <path d="M13.5 7L22.5 10.5V31L13.5 27.5V7Z" fill="url(#icoMapSeaM)"/>
-          <path d="M22.5 10.5L31.5 7V27.5L22.5 31V10.5Z" fill="url(#icoMapSeaR)"/>
-          <path d="M6.5 14C8.5 12.8 11 13.5 12.2 15.5C13 16.8 11.8 19.5 10 20.5C8.5 21.3 6.5 19.5 6.5 17V14Z" fill="#4CE07B"/>
-          <path d="M15 11.5C17.5 11.2 19.8 12.8 20.5 15C21 16.6 19.5 18.8 17.5 18.8C15.8 18.8 14.5 17 14.8 14.5L15 11.5Z" fill="#59E888"/>
-          <path d="M24 14.5C26 13.5 29 14.2 29.8 16.5C30.4 18.2 28.5 22 26.2 22.8C24.5 23.4 23.5 20.5 23.8 17.5L24 14.5Z" fill="#4CE07B"/>
-          <path d="M16.2 21.5L20 22.8V27L16.2 25.4V21.5Z" fill="#3BC96B"/>
-        </svg>
-      </span>
-      <span>Stops</span>
-      <span class="nav-badge hidden" id="badge-stops">0</span>
-    </button>
+      <div class="wizard-progress">
+        <div class="wizard-progress-bar" id="wiz-progress-bar" style="width:25%;"></div>
+      </div>
 
-    <button class="nav-item" data-tab="split" type="button">
-      <span class="nav-icon" aria-hidden="true">
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="icoCardBg" x1="4" y1="8" x2="32" y2="28" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#58B7F5"/>
-              <stop offset="1" stop-color="#2876C7"/>
-            </linearGradient>
-          </defs>
-          <rect x="4" y="8" width="28" height="20" rx="4" fill="url(#icoCardBg)"/>
-          <rect x="4" y="13" width="28" height="4.5" fill="#182C4C"/>
-          <rect x="8" y="20.5" width="7" height="4.5" rx="1.2" fill="#FDE047"/>
-          <rect x="18" y="21.5" width="9.5" height="2.4" rx="1.2" fill="#BAE6FD"/>
-        </svg>
-      </span>
-      <span>Split</span>
-      <span class="nav-badge hidden" id="badge-tx">0</span>
-    </button>
+      <!-- STEP 1: BASICS & CREW -->
+      <div class="wiz-step" id="wiz-step-1">
+        <label class="field-label" for="wiz-trip-title">Trip or Event Name</label>
+        <input id="wiz-trip-title" class="input input-lg" type="text" placeholder="e.g. Vegas Bachelor Run, Northern Roadtrip..." maxlength="60">
 
-    <button class="nav-item" data-tab="vibe" type="button">
-      <span class="nav-icon" aria-hidden="true">
-        <svg viewBox="0 0 36 36" fill="none">
-          <defs>
-            <linearGradient id="icoMusicGrad" x1="8" y1="6" x2="29" y2="30" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stop-color="#B9A6FF"/>
-              <stop offset="1" stop-color="#6F51D9"/>
-            </linearGradient>
-          </defs>
-          <path d="M14.5 25V10.2C14.5 9.2 15.2 8.4 16.1 8.2L27.6 5.9C28.8 5.7 30 6.6 30 7.9V22.5" stroke="url(#icoMusicGrad)" stroke-width="4.2" stroke-linecap="round"/>
-          <path d="M15.5 12.2L29 9.5" stroke="url(#icoMusicGrad)" stroke-width="3.6" stroke-linecap="round"/>
-          <ellipse cx="11.2" cy="25.8" rx="4.8" ry="3.8" fill="url(#icoMusicGrad)"/>
-          <ellipse cx="26" cy="23.2" rx="4.8" ry="3.8" fill="url(#icoMusicGrad)"/>
-        </svg>
-      </span>
-      <span>Music &amp; Chat</span>
-      <span class="nav-badge hidden" id="badge-vibe">0</span>
-    </button>
-  </nav>
+        <div class="preset-chips" style="margin-top:8px;">
+          <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Epic Road Trip">🛣️ Epic Road Trip</button>
+          <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Bachelor Party Run">🍾 Bachelor Party</button>
+          <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Spring Break Crew">🌴 Spring Break</button>
+          <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Weekend Getaway">🏔️ Weekend Getaway</button>
+        </div>
 
-  <!-- BOTTOM SHEET: Who Are You? -->
+        <label class="field-label" style="margin-top:18px;">Who’s in the Crew?</label>
+        <p class="muted" style="margin:0 0 8px;">Add everyone riding or splitting costs together.</p>
+        <div class="input-row">
+          <input id="wiz-person-input" class="input" type="text" placeholder="Type a name (e.g. Alex)..." maxlength="24">
+          <button id="wiz-add-person-btn" class="btn btn-lime" type="button">+ Add</button>
+        </div>
+        <div id="wiz-crew-chips" class="crew-chip-list"></div>
+      </div>
+
+      <!-- STEP 2: SELECT MODULES -->
+      <div class="wiz-step hidden" id="wiz-step-2">
+        <p class="muted" style="margin-top:0;">Tap to choose which modules to include. You can toggle these on or off anytime later.</p>
+        <div class="wiz-module-grid">
+          <button type="button" class="wiz-mod-toggle active" data-mod="locations">
+            <div class="wiz-mod-ico">📍</div>
+            <div class="wiz-mod-body">
+              <div class="wiz-mod-name">Trip Locations &amp; Stops</div>
+              <div class="wiz-mod-desc">Live ETA countdown, "Where we are" town readout, pit stops &amp; map.</div>
+            </div>
+            <div class="wiz-mod-check">✓</div>
+          </button>
+
+          <button type="button" class="wiz-mod-toggle active" data-mod="expenses">
+            <div class="wiz-mod-ico">💳</div>
+            <div class="wiz-mod-body">
+              <div class="wiz-mod-name">Trip Expense Splitter</div>
+              <div class="wiz-mod-desc">Track who paid for gas, hotels, or drinks &amp; settle up with zero math.</div>
+            </div>
+            <div class="wiz-mod-check">✓</div>
+          </button>
+
+          <button type="button" class="wiz-mod-toggle active" data-mod="playlist">
+            <div class="wiz-mod-ico">🎵</div>
+            <div class="wiz-mod-body">
+              <div class="wiz-mod-name">Shared Music Playlist</div>
+              <div class="wiz-mod-desc">Embed &amp; collaborate on YouTube Music, Spotify, or Apple Music.</div>
+            </div>
+            <div class="wiz-mod-check">✓</div>
+          </button>
+
+          <button type="button" class="wiz-mod-toggle active" data-mod="notes">
+            <div class="wiz-mod-ico">💬</div>
+            <div class="wiz-mod-body">
+              <div class="wiz-mod-name">Crew Notes &amp; Board</div>
+              <div class="wiz-mod-desc">Share door codes, meetup times, and quick road notes.</div>
+            </div>
+            <div class="wiz-mod-check">✓</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: CONFIGURE SELECTED MODULES -->
+      <div class="wiz-step hidden" id="wiz-step-3">
+        <!-- Locations Config -->
+        <div id="wiz-cfg-locations" class="wiz-cfg-block">
+          <label class="field-label">📍 Final Destination <span class="muted">(optional now)</span></label>
+          <div class="input-row">
+            <input id="wiz-dest-input" class="input" type="text" placeholder="Search city or landmark (e.g. Las Vegas, NV)...">
+            <button id="wiz-dest-search-btn" class="btn btn-lime" type="button">Find</button>
+          </div>
+          <div id="wiz-dest-selected" class="selected-pill hidden"></div>
+          <div id="wiz-dest-results" class="search-results hidden"></div>
+        </div>
+
+        <!-- Playlist Config -->
+        <div id="wiz-cfg-playlist" class="wiz-cfg-block">
+          <label class="field-label">🎵 Shared Playlist URL <span class="muted">(YouTube Music, Spotify, or Apple Music)</span></label>
+          <input id="wiz-playlist-url" class="input" type="url" placeholder="https://music.youtube.com/playlist?list=... or Spotify link">
+          <input id="wiz-playlist-title" class="input" style="margin-top:8px;" type="text" placeholder="Playlist Name (e.g. Roadtrip Bangers)">
+          <div style="margin-top:6px;">
+            <button id="wiz-sample-playlist-btn" class="subtle-pill-btn" type="button">Use Dangerous.Business YTM Playlist</button>
+          </div>
+        </div>
+
+        <!-- Notes Config -->
+        <div id="wiz-cfg-notes" class="wiz-cfg-block">
+          <label class="field-label">💬 Pinned First Note <span class="muted">(optional)</span></label>
+          <input id="wiz-first-note" class="input" type="text" placeholder="e.g. Airbnb code is #4829 • Meet at 8 AM sharp">
+        </div>
+
+        <div id="wiz-cfg-empty" class="wiz-cfg-block hidden">
+          <p class="muted" style="text-align:center; padding:18px 0;">Expense Splitter is ready to go—no extra setup needed!</p>
+        </div>
+      </div>
+
+      <!-- STEP 4: SECURITY & ENCRYPTION -->
+      <div class="wiz-step hidden" id="wiz-step-4">
+        <p class="muted" style="margin-top:0;">Everything is stored inside the URL link itself—nothing is ever saved on a cloud server.</p>
+
+        <div class="security-choice-grid">
+          <button type="button" class="sec-choice active" id="wiz-sec-standard" data-sec="standard">
+            <div class="sec-choice-head">
+              <span style="font-size:1.3rem;">🔗</span>
+              <strong>Instant Link (No Password)</strong>
+            </div>
+            <p class="muted" style="margin:6px 0 0;">Anyone with the link can open the trip immediately in 1 tap.</p>
+          </button>
+
+          <button type="button" class="sec-choice" id="wiz-sec-encrypted" data-sec="encrypted">
+            <div class="sec-choice-head">
+              <span style="font-size:1.3rem;">🔒</span>
+              <strong>AES-256 Password Encrypted</strong>
+            </div>
+            <p class="muted" style="margin:6px 0 0;">Encrypts the URL hash with your password. Unreadable without the passphrase.</p>
+          </button>
+        </div>
+
+        <div id="wiz-password-box" class="password-setup-box hidden">
+          <label class="field-label" for="wiz-password-input">Set Trip Passcode</label>
+          <input id="wiz-password-input" class="input input-lg" type="password" placeholder="Enter a password for your crew..." autocomplete="new-password">
+          <div class="muted" style="margin-top:6px; font-size:0.78rem;">
+            Send this password to your crew on Signal/iMessage. Because there is no server, lost passwords cannot be recovered.
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button id="wiz-back-btn" class="btn hidden" type="button">← Back</button>
+        <button id="wiz-next-btn" class="btn btn-lime btn-lg" style="margin-left:auto;" type="button">Next: Choose Modules →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VIEW 3: ENCRYPTED LINK PASSCODE UNLOCK MODAL
+       ========================================================= -->
+  <div id="unlock-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="wizard-card" style="max-width:430px; text-align:center;">
+      <div class="unlock-lock-orb">🔒</div>
+      <div class="dest-eyebrow" style="color:var(--lime);">AES-256-GCM ENCRYPTED TRIP</div>
+      <h2 class="wizard-title" style="margin-top:6px;">Enter Trip Passcode</h2>
+      <p class="muted">This Dangerous.Business link is encrypted. Enter the crew password to decrypt it in your browser.</p>
+
+      <form id="unlock-form" style="margin-top:16px;">
+        <input id="unlock-password-input" class="input input-lg" style="text-align:center;" type="password" placeholder="Passcode..." required>
+        <div id="unlock-error" class="error-banner hidden">Incorrect passcode. Please try again.</div>
+        <button class="btn btn-lime btn-full btn-xl" style="margin-top:12px;" type="submit">Unlock Trip →</button>
+      </form>
+      <button id="unlock-back-home-btn" class="subtle-pill-btn" style="margin-top:14px;" type="button">← Back to Landing Page</button>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       VIEW 4: ACTIVE TRIP WEB APP (URL-DRIVEN)
+       ========================================================= -->
+  <div id="app-view" class="hidden">
+    <!-- FIRST-VISIT TRIP WELCOME SPLASH (Crew Identity Picker) -->
+    <section id="welcome-splash" class="welcome-splash hidden" aria-label="Welcome to the Trip">
+      <div class="welcome-aurora welcome-aurora-a"></div>
+      <div class="welcome-aurora welcome-aurora-b"></div>
+      <div class="welcome-grid-bg"></div>
+
+      <div class="welcome-inner">
+        <div class="welcome-header">
+          <div class="welcome-emblem" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none">
+              <rect x="2" y="2" width="60" height="60" rx="20" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+              <path d="M16 47 C16 31 46 37 47 18" stroke="#C8FF3D" stroke-width="4.5" stroke-linecap="round"/>
+              <circle cx="16" cy="47" r="4" fill="#9D7BFF"/>
+              <circle cx="47" cy="18" r="6" fill="#C8FF3D"/>
+            </svg>
+          </div>
+          <div class="welcome-trip-pill" id="welcome-trip-pill">DANGEROUS.BUSINESS</div>
+          <h1 class="welcome-title" id="welcome-trip-heading">Welcome aboard!</h1>
+          <p class="welcome-sub">Pick your name below so expenses, stops &amp; updates are tagged to you.</p>
+        </div>
+
+        <div class="welcome-picker-wrap">
+          <div class="welcome-picker-label">Who’s holding this phone?</div>
+          <div class="welcome-crew-grid" id="welcome-crew-grid"></div>
+        </div>
+
+        <button id="welcome-go-btn" class="welcome-cta" type="button" disabled>
+          <span>Tap your name above</span>
+        </button>
+      </div>
+    </section>
+
+    <div class="app-shell">
+      <!-- App Top Header -->
+      <header class="topbar">
+        <button id="who-picker-btn" class="who-btn" type="button">
+          <div class="avatar-circle avatar-tim" id="who-avatar">T</div>
+          <div>
+            <div class="who-kicker">
+              <span id="header-trip-name">Roadtrip</span>
+              <span id="header-lock-badge" class="lock-mini hidden">🔒</span>
+            </div>
+            <div class="who-name">Hey, <span id="who-label">Tim</span> <span class="who-caret">▾</span></div>
+          </div>
+        </button>
+
+        <div class="topbar-actions">
+          <button id="open-modules-sheet-btn" class="subtle-pill-btn" type="button" title="Configure Modules &amp; Security">⚙ Modules</button>
+          <button id="top-landing-btn" class="subtle-pill-btn" type="button" title="Landing Page / New Trip">Home</button>
+        </div>
+      </header>
+
+      <!-- PROMINENT "SHARE THE UPDATE" HERO BAR -->
+      <section id="share-update-bar" class="share-update-bar">
+        <div class="share-bar-left">
+          <div class="share-bar-title">
+            <span id="share-bar-status-dot" class="share-status-dot"></span>
+            <span id="share-bar-headline">URL Link Ready</span>
+          </div>
+          <div class="share-bar-sub" id="share-bar-subtext">Everything is packed in the URL. Share after making changes.</div>
+        </div>
+        <button id="primary-share-update-btn" class="btn btn-lime share-now-btn" type="button">
+          <span>📤 Share the Update</span>
+        </button>
+      </section>
+
+      <!-- TAB 1: HOME OVERVIEW -->
+      <main id="tab-home" class="tab-panel active">
+        <!-- Hero Location & ETA Card (Shown when Locations module is enabled) -->
+        <section id="home-locations-card" class="hero-card">
+          <div class="hero-top">
+            <span class="dest-eyebrow" id="hero-dest-eyebrow">NO DESTINATION SET</span>
+            <div style="display:flex; gap:6px;">
+              <button id="gps-snap-btn" class="subtle-pill-btn lime-border" type="button">📍 Update GPS</button>
+              <button id="open-dest-sheet-btn" class="subtle-pill-btn" type="button">Edit Dest</button>
+            </div>
+          </div>
+
+          <div class="hero-time-row">
+            <div class="hero-time" id="hero-time-left">—</div>
+            <div class="eta-badge" id="hero-eta-badge">ETA —</div>
+          </div>
+
+          <div class="where-box">
+            <div class="where-label">Where We Are</div>
+            <div class="where-text" id="hero-where">Tap "📍 Update GPS" above to stamp location</div>
+            <div class="where-meta" id="hero-updated">Location stored in shared URL</div>
+          </div>
+
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+
+          <div class="hero-stats">
+            <div class="hero-stat-item">
+              <div class="stat-k">Distance Left</div>
+              <div class="stat-v" id="m-miles-left">—</div>
+            </div>
+            <div class="hero-stat-item">
+              <div class="stat-k">Speed</div>
+              <div class="stat-v" id="m-speed">—</div>
+            </div>
+            <div class="hero-stat-item">
+              <div class="stat-k">Next Stop</div>
+              <div class="stat-v stat-v-stop" id="m-next-stop">None</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Dynamic Quick Actions Row -->
+        <section class="quick-actions" id="home-quick-actions">
+          <button class="qa-btn accent" id="qa-stop-btn" data-requires="locations" type="button">
+            <div class="qa-circle" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </div>
+            <div class="qa-label">Add<br>Stop</div>
+          </button>
+
+          <button class="qa-btn purple" id="qa-cost-btn" data-requires="expenses" type="button">
+            <div class="qa-circle" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3v18"/>
+                <path d="M16.5 7.5a4 4 0 0 0-4.5-2.5c-2.5 0-4.2 1.3-4.2 3.3 0 4.3 9.2 2.2 9.2 6.8 0 2.1-1.9 3.6-4.7 3.6-2.4 0-4.1-.9-4.9-2.5"/>
+              </svg>
+            </div>
+            <div class="qa-label">Add<br>Expense</div>
+          </button>
+
+          <a class="qa-btn" id="qa-song-btn" data-requires="playlist" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
+            <div class="qa-circle" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 17.5V6l9-1.8V15.5"/>
+                <circle cx="6.5" cy="17.5" r="2.5" fill="currentColor" stroke="none"/>
+                <circle cx="15.5" cy="15.5" r="2.5" fill="currentColor" stroke="none"/>
+              </svg>
+            </div>
+            <div class="qa-label">Edit<br>Playlist</div>
+          </a>
+
+          <button class="qa-btn" id="qa-msg-btn" data-requires="notes" type="button">
+            <div class="qa-circle" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-.9L3 20.5l1.6-4.8A8.5 8.5 0 1 1 21 11.5z"/>
+                <circle cx="9.2" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="12.5" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="15.8" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+            </div>
+            <div class="qa-label">Post<br>Note</div>
+          </button>
+        </section>
+
+        <!-- Add to Home Screen Prompt Card -->
+        <section id="install-banner" class="install-card hidden" aria-label="Save to Home Screen">
+          <img src="./icons/icon-192.png" alt="Dangerous.Business Icon" class="install-icon">
+          <div class="install-copy">
+            <div class="install-title">Add to Home Screen</div>
+            <div class="install-sub" id="install-banner-sub">Save as a 1-tap app for the trip</div>
+          </div>
+          <button id="install-banner-btn" class="btn btn-lime btn-sm install-cta" type="button">Add</button>
+          <button id="install-banner-close" class="install-close" type="button" aria-label="Dismiss install prompt">✕</button>
+        </section>
+
+        <!-- Expense Snapshot Card (Shown when Expenses module is enabled) -->
+        <section id="home-expenses-card" class="card">
+          <div class="card-head">
+            <div class="card-title">Trip Expenses</div>
+            <button class="link-btn" id="home-goto-split" type="button">Open Splitter →</button>
+          </div>
+
+          <div class="money-row">
+            <div>
+              <div class="muted">Total spent so far</div>
+              <div class="money-big" id="home-total-spent">$0.00</div>
+              <div id="home-my-balance" class="balance-badge even">Everyone is even</div>
+            </div>
+            <div class="donut-box">
+              <svg id="home-donut" viewBox="0 0 100 100" class="donut-svg"></svg>
+              <span class="donut-center-label">SPLIT</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Playlist Snapshot Card (Shown when Playlist module is enabled) -->
+        <section id="home-playlist-card" class="card">
+          <div class="card-head">
+            <div class="card-title">Shared Playlist</div>
+            <button class="link-btn" id="home-goto-music" type="button">Player →</button>
+          </div>
+
+          <a id="home-music-link" class="track-row" style="text-decoration:none; color:inherit; margin-bottom:0;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
+            <div class="music-app-badge" aria-hidden="true">🎵</div>
+            <div class="track-info">
+              <div class="track-title" id="home-music-title">Dangerous.Business Playlist</div>
+              <div class="track-meta" id="home-music-sub">Tap to open &amp; edit playlist directly</div>
+            </div>
+            <span class="btn btn-sm btn-lime">Edit ↗</span>
+          </a>
+        </section>
+
+        <!-- Crew Notes Snapshot Card (Shown when Notes module is enabled) -->
+        <section id="home-notes-card" class="card">
+          <div class="card-head">
+            <div class="card-title">Crew Board</div>
+            <button class="link-btn" id="home-goto-notes" type="button">All Notes →</button>
+          </div>
+          <div id="home-latest-msgs"></div>
+        </section>
+
+        <!-- Big Bottom Share CTA on Home -->
+        <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
+          📤 Share the Update with Crew
+        </button>
+      </main>
+
+      <!-- TAB 2: STOPS & MAP (Locations Module) -->
+      <main id="tab-stops" class="tab-panel">
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Quick Pit Stops</div>
+            <button class="btn btn-sm btn-lime" id="stops-search-open-btn" type="button">+ Search Place</button>
+          </div>
+          <div class="pit-grid">
+            <button class="pit-tile quick-stop-chip" type="button" data-q="cafe"><span>☕</span> Coffee nearby</button>
+            <button class="pit-tile quick-stop-chip" type="button" data-q="gas station"><span>⛽</span> Gas nearby</button>
+            <button class="pit-tile quick-stop-chip" type="button" data-q="restaurant"><span>🍔</span> Food nearby</button>
+            <button class="pit-tile quick-stop-chip" type="button" data-q="rest area"><span>🚻</span> Rest area</button>
+          </div>
+          <div id="stops-tab-results" class="search-results hidden"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Our Route &amp; Stops</div>
+            <div style="display:flex; gap:6px;">
+              <a id="gmaps-route-link" class="btn btn-sm btn-lime hidden" target="_blank" rel="noopener">Google Maps ↗</a>
+              <a id="waze-next-link" class="btn btn-sm btn-purple hidden" target="_blank" rel="noopener">Waze ↗</a>
+            </div>
+          </div>
+          <div id="stops-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Route Map</div>
+            <div style="display:flex; gap:6px;">
+              <button id="stops-gps-btn" class="btn btn-sm btn-lime" type="button">📍 Stamp My GPS</button>
+              <button id="center-map-btn" class="btn btn-sm" type="button">Center</button>
+            </div>
+          </div>
+          <div id="map"></div>
+        </section>
+
+        <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
+          📤 Share Route Update
+        </button>
+      </main>
+
+      <!-- TAB 3: NATIVE EXPENSE SPLITTER (Expenses Module) -->
+      <main id="tab-split" class="tab-panel">
+        <section class="hero-card" style="margin-bottom:14px;">
+          <div class="money-row">
+            <div>
+              <div class="dest-eyebrow">TOTAL TRIP SPENT</div>
+              <div class="hero-time" id="split-total-display" style="margin-top:4px;">$0.00</div>
+              <div style="color:var(--lime); font-weight:800; font-size:0.95rem; margin-top:4px;">
+                <span id="split-per-person-display">$0.00</span> per person
+              </div>
+            </div>
+            <div class="donut-box" style="width:94px; height:94px;">
+              <svg id="split-donut" viewBox="0 0 100 100" class="donut-svg"></svg>
+              <span class="donut-center-label">SPLIT</span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px;">
+            <button id="split-add-expense-btn" class="btn btn-lime" style="padding:14px; font-size:1rem;" type="button">+ Add Expense</button>
+            <button id="split-add-payment-btn" class="btn btn-purple" style="padding:14px; font-size:1rem;" type="button">⇄ Record Payback</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">How to Settle Up</div>
+            <button id="split-edit-crew-btn" class="subtle-pill-btn" type="button">👥 Edit Crew</button>
+          </div>
+          <div id="split-settlement-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Everyone’s Balance</div>
+          </div>
+          <div id="split-balance-grid" class="split-balance-grid"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <div class="card-title">Expense Log</div>
+            <span class="muted" id="split-tx-count">0 items</span>
+          </div>
+          <div id="split-tx-list"></div>
+        </section>
+
+        <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
+          📤 Share Expense Update
+        </button>
+      </main>
+
+      <!-- TAB 4: SHARED PLAYLIST & CREW NOTES -->
+      <main id="tab-vibe" class="tab-panel">
+        <!-- Playlist Section -->
+        <section id="vibe-playlist-section" class="card">
+          <div class="card-head">
+            <div class="card-title" id="vibe-playlist-heading">Roadtrip Music</div>
+            <button id="edit-playlist-url-btn" class="subtle-pill-btn" type="button">Change Link</button>
+          </div>
+
+          <div id="playlist-embed-wrap" class="player-wrap">
+            <div id="yt-player-mount"></div>
+          </div>
+
+          <a id="vibe-edit-playlist-link" class="btn btn-lime btn-full" style="margin-top:14px; font-size:1.05rem; padding:15px 16px;" href="https://music.youtube.com/playlist?list=PLO6qnlYSFTDc&jct=Bk_kBa-9hpvTi_P7SuT2Iw" target="_blank" rel="noopener">
+            + Add or Edit Songs in Playlist ↗
+          </a>
+          <div class="muted" style="text-align:center; margin-top:8px;">
+            Opens the shared playlist directly so anyone in the crew can add or reorder songs.
+          </div>
+        </section>
+
+        <!-- Crew Notes Section -->
+        <section id="vibe-notes-section" class="card">
+          <div class="card-head">
+            <div class="card-title">Crew Board &amp; Notes</div>
+            <button id="open-note-sheet-btn" class="btn btn-sm btn-lime" type="button">+ New Note</button>
+          </div>
+          <div class="msg-list" id="msg-list"></div>
+
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;">
+            <button class="subtle-pill-btn quick-msg-chip" type="button">☕ Coffee stop soon?</button>
+            <button class="subtle-pill-btn quick-msg-chip" type="button">⛽ Gas check</button>
+            <button class="subtle-pill-btn quick-msg-chip" type="button">🎶 Great song</button>
+            <button class="subtle-pill-btn quick-msg-chip" type="button">📍 Check rally point</button>
+          </div>
+
+          <form id="msg-form" class="input-row" style="margin-top:10px;">
+            <input id="msg-input" class="input" type="text" placeholder="Post a note, code, or update..." required>
+            <button class="btn btn-lime" type="submit">Post</button>
+          </form>
+        </section>
+
+        <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
+          📤 Share the Update
+        </button>
+      </main>
+    </div>
+
+    <!-- Native Fixed Bottom Tab Bar -->
+    <nav class="bottom-nav" id="bottom-nav" role="tablist">
+      <button class="nav-item active" data-tab="home" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none">
+            <path d="M8 16.5L18 8L28 16.5V30C28 31.1 27.1 32 26 32H10C8.9 32 8 31.1 8 30V16.5Z" fill="#F3E5D0"/>
+            <path d="M5 17L18 6L31 17C31.7 17.6 31.3 18.8 30.3 18.8H28.5L18 9.9L7.5 18.8H5.7C4.7 18.8 4.3 17.6 5 17Z" fill="#FF6B4A"/>
+            <rect x="21" y="19" width="4.5" height="5" rx="1.2" fill="#5CC8FF"/>
+            <path d="M12.5 32V22.5C12.5 21.4 13.4 20.5 14.5 20.5H16.5C17.6 20.5 18.5 21.4 18.5 22.5V32H12.5Z" fill="#7D5A44"/>
+            <rect x="6" y="31" width="24" height="2" rx="1" fill="#63C74D"/>
+          </svg>
+        </span>
+        <span>Overview</span>
+      </button>
+
+      <button class="nav-item" id="nav-tab-stops" data-tab="stops" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none">
+            <path d="M4.5 10.5L13.5 7V27.5L4.5 31V10.5Z" fill="#BCEBFF"/>
+            <path d="M13.5 7L22.5 10.5V31L13.5 27.5V7Z" fill="#6FD0FF"/>
+            <path d="M22.5 10.5L31.5 7V27.5L22.5 31V10.5Z" fill="#A9E4FF"/>
+            <path d="M6.5 14C8.5 12.8 11 13.5 12.2 15.5C13 16.8 11.8 19.5 10 20.5C8.5 21.3 6.5 19.5 6.5 17V14Z" fill="#4CE07B"/>
+            <path d="M15 11.5C17.5 11.2 19.8 12.8 20.5 15C21 16.6 19.5 18.8 17.5 18.8C15.8 18.8 14.5 17 14.8 14.5L15 11.5Z" fill="#59E888"/>
+            <path d="M24 14.5C26 13.5 29 14.2 29.8 16.5C30.4 18.2 28.5 22 26.2 22.8C24.5 23.4 23.5 20.5 23.8 17.5L24 14.5Z" fill="#4CE07B"/>
+          </svg>
+        </span>
+        <span>Locations</span>
+        <span class="nav-badge hidden" id="badge-stops">0</span>
+      </button>
+
+      <button class="nav-item" id="nav-tab-split" data-tab="split" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none">
+            <rect x="4" y="8" width="28" height="20" rx="4" fill="#3B97E3"/>
+            <rect x="4" y="13" width="28" height="4.5" fill="#182C4C"/>
+            <rect x="8" y="20.5" width="7" height="4.5" rx="1.2" fill="#FDE047"/>
+            <rect x="18" y="21.5" width="9.5" height="2.4" rx="1.2" fill="#BAE6FD"/>
+          </svg>
+        </span>
+        <span>Expenses</span>
+        <span class="nav-badge hidden" id="badge-tx">0</span>
+      </button>
+
+      <button class="nav-item" id="nav-tab-vibe" data-tab="vibe" type="button">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none">
+            <path d="M14.5 25V10.2C14.5 9.2 15.2 8.4 16.1 8.2L27.6 5.9C28.8 5.7 30 6.6 30 7.9V22.5" stroke="#9D7BFF" stroke-width="4.2" stroke-linecap="round"/>
+            <ellipse cx="11.2" cy="25.8" rx="4.8" ry="3.8" fill="#9D7BFF"/>
+            <ellipse cx="26" cy="23.2" rx="4.8" ry="3.8" fill="#9D7BFF"/>
+          </svg>
+        </span>
+        <span id="nav-vibe-label">Music &amp; Notes</span>
+        <span class="nav-badge hidden" id="badge-vibe">0</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- =========================================================
+       BOTTOM SHEETS (SHARE DIALOG, EXPENSE, MODULES, STOPS, ETC.)
+       ========================================================= -->
+
+  <!-- SHARE THE UPDATE DIALOG SHEET -->
+  <div id="sheet-share" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-head">
+        <div class="card-title">📤 Share the Update</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Done</button>
+      </div>
+
+      <div class="share-dialog-box">
+        <div class="share-enc-badge" id="share-sheet-enc-badge">🔗 Standard Compressed URL</div>
+        <div class="share-summary-text" id="share-sheet-summary">
+          Send this link to the crew. When they open it, your latest updates merge automatically.
+        </div>
+
+        <button id="native-share-dialog-btn" class="btn btn-lime btn-full btn-xl" style="margin-top:14px;" type="button">
+          📤 Open Share Dialog (Messages / Signal)
+        </button>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+          <button id="copy-url-btn" class="btn btn-purple" type="button">📋 Copy Link</button>
+          <button id="copy-msg-url-btn" class="btn" type="button">💬 Copy Note + Link</button>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label class="field-label" for="share-url-readonly" style="font-size:0.74rem;">Shareable Trip URL</label>
+          <input id="share-url-readonly" class="input" style="font-size:0.78rem; color:var(--muted);" type="text" readonly>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT EXPENSE OR PAYBACK SHEET -->
+  <div id="sheet-expense" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-head">
+        <div class="card-title" id="expense-sheet-title">Add Expense</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
+      </div>
+
+      <form id="expense-form">
+        <input type="hidden" id="tx-edit-id" value="">
+        <input type="hidden" id="tx-type" value="expense">
+
+        <div id="tx-desc-wrap">
+          <label class="field-label" for="tx-desc">What was it for?</label>
+          <input id="tx-desc" class="input" type="text" placeholder="e.g. Gas, Hotel, Dinner, Drinks...">
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
+            <button type="button" class="subtle-pill-btn tx-preset-chip" data-desc="⛽ Gas">⛽ Gas</button>
+            <button type="button" class="subtle-pill-btn tx-preset-chip" data-desc="🏨 Hotel / Airbnb">🏨 Hotel</button>
+            <button type="button" class="subtle-pill-btn tx-preset-chip" data-desc="🍔 Food &amp; Drinks">🍔 Food</button>
+            <button type="button" class="subtle-pill-btn tx-preset-chip" data-desc="🎟️ Tickets / Cover">🎟️ Tickets</button>
+          </div>
+        </div>
+
+        <label class="field-label" for="tx-amount" style="margin-top:14px;">Amount ($)</label>
+        <input id="tx-amount" class="input input-lg" type="number" step="0.01" min="0.01" placeholder="0.00" required>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">
+          <div>
+            <label class="field-label" for="tx-payer" id="tx-payer-label">Paid by</label>
+            <select id="tx-payer" class="input"></select>
+          </div>
+          <div id="tx-payee-wrap" class="hidden">
+            <label class="field-label" for="tx-payee">Paid to</label>
+            <select id="tx-payee" class="input"></select>
+          </div>
+        </div>
+
+        <button class="btn btn-lime btn-full btn-xl" style="margin-top:18px;" type="submit" id="tx-submit-btn">Save &amp; Update Link</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODULES & TRIP SETTINGS SHEET -->
+  <div id="sheet-modules" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-head">
+        <div class="card-title">Trip Modules &amp; Security</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Done</button>
+      </div>
+
+      <label class="field-label" for="settings-trip-title">Trip Name</label>
+      <div class="input-row" style="margin-bottom:14px;">
+        <input id="settings-trip-title" class="input" type="text">
+        <button id="settings-save-title-btn" class="btn btn-lime btn-sm" type="button">Save</button>
+      </div>
+
+      <label class="field-label">Active Modules (Tap to Toggle)</label>
+      <div class="wiz-module-grid" id="settings-module-grid" style="margin-bottom:14px;"></div>
+
+      <label class="field-label" for="settings-password-input">URL Password Encryption (AES-256)</label>
+      <div class="input-row">
+        <input id="settings-password-input" class="input" type="password" placeholder="Leave blank for unencrypted link">
+        <button id="settings-save-password-btn" class="btn btn-purple btn-sm" type="button">Apply</button>
+      </div>
+      <div class="muted" style="margin-top:6px; font-size:0.76rem;" id="settings-enc-status"></div>
+
+      <div class="sheet-who-footer" style="margin-top:18px;">
+        <button id="settings-new-trip-btn" class="btn" type="button">+ Start New Trip</button>
+        <button id="settings-go-landing-btn" class="btn" type="button">Landing Page</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT PLAYLIST LINK SHEET -->
+  <div id="sheet-playlist" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-head">
+        <div class="card-title">Shared Playlist Link</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
+      </div>
+      <label class="field-label" for="sheet-playlist-title">Playlist Title</label>
+      <input id="sheet-playlist-title" class="input" style="margin-bottom:10px;" type="text" placeholder="e.g. Roadtrip Mix">
+
+      <label class="field-label" for="sheet-playlist-url">Playlist URL (YouTube Music, Spotify, or Apple Music)</label>
+      <input id="sheet-playlist-url" class="input" type="url" placeholder="https://music.youtube.com/playlist?list=...">
+      <button id="sheet-playlist-save-btn" class="btn btn-lime btn-full" style="margin-top:14px;" type="button">Save Playlist</button>
+    </div>
+  </div>
+
+  <!-- WHO ARE YOU & CREW MANAGER SHEET -->
   <div id="sheet-who" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
@@ -459,26 +990,35 @@
         <button class="subtle-pill-btn close-sheet-btn" type="button">Done</button>
       </div>
       <div class="crew-grid" id="who-grid"></div>
+
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+        <label class="field-label" for="who-add-input">Add Someone to the Crew</label>
+        <div class="input-row">
+          <input id="who-add-input" class="input" type="text" placeholder="New crew member name...">
+          <button id="who-add-btn" class="btn btn-lime" type="button">+ Add</button>
+        </div>
+      </div>
+
       <div class="sheet-who-footer">
         <button id="who-install-btn" class="btn btn-purple hidden" type="button">Add to Home Screen</button>
-        <button id="who-welcome-btn" class="btn" type="button">Show Welcome Guide</button>
+        <button id="who-welcome-btn" class="btn" type="button">Switch Splash</button>
       </div>
     </div>
   </div>
 
-  <!-- BOTTOM SHEET: Add to Home Screen Instructions -->
+  <!-- ADD TO HOME SCREEN GUIDE SHEET -->
   <div id="sheet-install" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="card-head">
-        <div class="card-title">Save Roadtrip to Home Screen</div>
+        <div class="card-title">Save to Home Screen</div>
         <button class="subtle-pill-btn close-sheet-btn" type="button">Got it</button>
       </div>
       <div class="install-sheet-hero">
-        <img src="./icons/icon-192.png" alt="Roadtrip App Icon" class="install-sheet-icon">
+        <img src="./icons/icon-192.png" alt="App Icon" class="install-sheet-icon">
         <div>
-          <div style="font-weight:800; font-size:1.05rem;">Roadtrip App</div>
-          <div class="muted">Opens full-screen cleanly like a real app</div>
+          <div style="font-weight:800; font-size:1.05rem;">Dangerous.Business</div>
+          <div class="muted">Opens full-screen like a native app</div>
         </div>
       </div>
       <div id="install-steps-list" class="install-steps"></div>
@@ -486,7 +1026,7 @@
     </div>
   </div>
 
-  <!-- BOTTOM SHEET: Add Stop -->
+  <!-- ADD STOP SHEET -->
   <div id="sheet-stop" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
@@ -501,50 +1041,54 @@
         <button class="pit-tile sheet-pit-chip" type="button" data-q="rest area"><span>🚻</span> Rest area</button>
       </div>
       <div class="input-row">
-        <input id="sheet-stop-input" class="input" type="text" placeholder="Or type any place name...">
+        <input id="sheet-stop-input" class="input" type="text" placeholder="Or type any place or city...">
         <button id="sheet-stop-btn" class="btn btn-lime" type="button">Find</button>
       </div>
       <div id="sheet-stop-results" class="search-results hidden"></div>
     </div>
   </div>
 
-  <!-- BOTTOM SHEET: Edit Destination -->
+  <!-- EDIT DESTINATION SHEET -->
   <div id="sheet-dest" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="card-head">
-        <div class="card-title">Change Final Destination</div>
+        <div class="card-title">Set Final Destination</div>
         <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
       </div>
       <div class="input-row">
-        <input id="sheet-dest-input" class="input" type="text" placeholder="Where are we going?">
+        <input id="sheet-dest-input" class="input" type="text" placeholder="Where is the crew heading?">
         <button id="sheet-dest-btn" class="btn btn-lime" type="button">Search</button>
       </div>
       <div id="sheet-dest-results" class="search-results hidden"></div>
     </div>
   </div>
 
-  <!-- BOTTOM SHEET: Quick Note -->
+  <!-- QUICK NOTE SHEET -->
   <div id="sheet-msg" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="card-head">
-        <div class="card-title">Send a Car Note</div>
+        <div class="card-title">Post a Crew Note</div>
         <button class="subtle-pill-btn close-sheet-btn" type="button">Close</button>
       </div>
       <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
         <button class="subtle-pill-btn sheet-quick-msg" type="button">☕ Coffee stop soon?</button>
         <button class="subtle-pill-btn sheet-quick-msg" type="button">⛽ Getting low on gas</button>
-        <button class="subtle-pill-btn sheet-quick-msg" type="button">🍔 Getting hungry</button>
-        <button class="subtle-pill-btn sheet-quick-msg" type="button">📸 Look outside!</button>
+        <button class="subtle-pill-btn sheet-quick-msg" type="button">🏨 Check-in / Door Code:</button>
+        <button class="subtle-pill-btn sheet-quick-msg" type="button">📍 Rally point here!</button>
       </div>
       <form id="sheet-msg-form" class="input-row">
-        <input id="sheet-msg-input" class="input" type="text" placeholder="Write a message..." required>
-        <button class="btn btn-lime" type="submit">Send</button>
+        <input id="sheet-msg-input" class="input" type="text" placeholder="Write a message or code..." required>
+        <button class="btn btn-lime" type="submit">Post</button>
       </form>
     </div>
   </div>
 
+  <!-- Toast Banner -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="./app.js"></script>
 </body>
