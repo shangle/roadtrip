@@ -1722,7 +1722,7 @@ body {
   margin-bottom: 8px;
 }
 
-.stop-row.reached { opacity: 0.6; }
+.stop-row.reached { color: var(--muted); }
 .stop-row.reached .stop-name { text-decoration: line-through; }
 
 #map {
@@ -2183,7 +2183,7 @@ html[data-theme="brutalist"] #map .leaflet-tile-pane {
 }
 
 .mm-check-row.done {
-  opacity: 0.6;
+  color: var(--muted);
   text-decoration: line-through;
 }
 

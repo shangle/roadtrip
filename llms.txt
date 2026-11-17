@@ -1,6 +1,12 @@
 # Dangerous.Business — AI & LLM Integration Guide (llms.txt)
 
-> Dangerous.Business (https://dangerous.business) is a 100% client-side, zero-cloud group coordination web app for road trips, bachelor/bachelorette parties, spring break, and off-grid events. All state lives inside the URL hash.
+> Dangerous.Business is a 100% client-side, zero-cloud group coordination web app for road trips, bachelor/bachelorette parties, spring break, and off-grid events. All state lives inside the URL hash.
+
+## Documentation & Key Links
+
+- [Dangerous.Business Web App](https://dangerous.business/): Launch the zero-cloud URL-driven trip coordinator or load the live demo trip.
+- [AI Agent URL Protocol & DB-Script Spec](https://dangerous.business/ai.md): Full machine-readable specification for `#s=`, `#e=`, `&ai=`, and Turing-complete `DB-Script` micro-modules.
+- [Creator — shangle.me](https://shangle.me/): Created by shangle.me.
 
 ## How AI Agents (Gemini, ChatGPT, Claude, Meta AI) Can Read & Update a Trip URL
 
