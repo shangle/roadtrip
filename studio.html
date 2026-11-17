@@ -157,6 +157,7 @@
       </div>
     </header>
 
+    <main>
     <section class="landing-section" style="padding-top:28px;">
       <div class="section-header" style="margin-bottom:22px;">
         <div class="section-eyebrow">NO-CODE BUILDER + TURING-COMPLETE DB-SCRIPT</div>
@@ -267,9 +268,10 @@
       </div>
       <div id="studio-examples-grid" class="examples-grid"></div>
     </section>
+    </main>
 
     <footer class="landing-footer">
-      <p>Built by <a href="https://shangle.me" target="_blank" rel="noopener">shangle.me</a> • <a href="./">Home</a> • <a href="./docs.html">Documentation</a></p>
+      <p>Built by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me</a> • <a href="./" class="creator-link">Home</a> • <a href="./docs.html" class="creator-link">Documentation</a></p>
     </footer>
   </div>
 
@@ -521,7 +523,7 @@
                 <label for="f-${b.id}-var">Optional State Var (name / init)</label>
                 <div style="display:flex; gap:6px;">
                   <input id="f-${b.id}-var" aria-label="State variable name" data-idx="${idx}" data-prop="varName" value="${esc(b.varName || '')}" placeholder="var">
-                  <input aria-label="Initial value" data-idx="${idx}" data-prop="initVal" value="${esc(b.initVal ?? '')}" placeholder="0" style="max-width:72px;">
+                  <input id="f-${b.id}-init" aria-label="Initial value" data-idx="${idx}" data-prop="initVal" value="${esc(b.initVal ?? '')}" placeholder="0" style="max-width:72px;">
                 </div>
               </div>
             `;
