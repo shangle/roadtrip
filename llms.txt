@@ -70,7 +70,38 @@ When the user opens that link, Dangerous.Business automatically:
       "text": "Added Chili's receipt ($84.50 paid by Michael)."
     }
   ],
+  "addPins": [
+    {
+      "kind": "parking",
+      "name": "Ramp Level 3, Blue Giraffe, Spot 42",
+      "note": "Take the north elevator by Gate B",
+      "lat": 41.4091,
+      "lon": -75.6628,
+      "addedBy": "Michael"
+    },
+    {
+      "kind": "meetup",
+      "name": "Main Stage Ferris Wheel Rally Point",
+      "note": "Meet here at 9:30 PM if separated",
+      "lat": 41.4089,
+      "lon": -75.6624,
+      "addedBy": "Dwight"
+    }
+  ],
   "addMicroModules": [
+    {
+      "type": "countdown",
+      "title": "Christmas",
+      "icon": "⏳",
+      "targetTime": "2026-12-25T11:11"
+    },
+    {
+      "type": "script",
+      "title": "Custom Turing-Complete DB-Script Widget",
+      "icon": "🧮",
+      "code": "state count = 0\nbig (\"Score: \" + state.count) badge=\"DB-SCRIPT\"\nbtn \"+1 Point\" -> set state.count = state.count + 1",
+      "data": { "count": 0 }
+    },
     {
       "type": "checklist",
       "title": "Party Packing List",

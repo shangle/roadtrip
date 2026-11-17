@@ -40,8 +40,10 @@
   let carMarker = null;
   let destMarker = null;
   let stopMarkersLayer = null;
+  let pinMarkersLayer = null;
   let routeLayer = null;
   let cachedRouteGeometry = [];
+  let pendingPinCoords = null;
 
   // =========================================================
   // UTILITIES & FORMATTING
@@ -76,6 +78,130 @@
     const h = Math.floor(mins / 60);
     const m = mins % 60;
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+
+  function formatRichTimeDiff(targetInput, nowMs = Date.now()) {
+    if (!targetInput) {
+      return {
+        text: 'No Date Set',
+        badge: '⏳ TIMER',
+        formattedDate: '',
+        isPast: false,
+        isNow: false,
+        years: 0,
+        months: 0,
+        days: 0,
+        hours: 0,
+        minutes: 0,
+      };
+    }
+    const targetMs = typeof targetInput === 'number' ? targetInput : Date.parse(targetInput);
+    if (!Number.isFinite(targetMs)) {
+      return {
+        text: String(targetInput),
+        badge: '⏳ TIMER',
+        formattedDate: String(targetInput),
+        isPast: false,
+        isNow: false,
+        years: 0,
+        months: 0,
+        days: 0,
+        hours: 0,
+        minutes: 0,
+      };
+    }
+
+    const formattedDate = new Date(targetMs).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+    const rawDiffMs = targetMs - nowMs;
+    if (Math.abs(rawDiffMs) < 60000) {
+      return {
+        text: 'Happening Now!',
+        badge: '🟢 HAPPENING NOW',
+        formattedDate,
+        isPast: false,
+        isNow: true,
+        years: 0,
+        months: 0,
+        days: 0,
+        hours: 0,
+        minutes: 0,
+      };
+    }
+
+    const isPast = rawDiffMs < 0;
+    const d1 = new Date(isPast ? targetMs : nowMs);
+    const d2 = new Date(isPast ? nowMs : targetMs);
+
+    let years = d2.getFullYear() - d1.getFullYear();
+    let months = d2.getMonth() - d1.getMonth();
+    let days = d2.getDate() - d1.getDate();
+    let hours = d2.getHours() - d1.getHours();
+    let minutes = d2.getMinutes() - d1.getMinutes();
+
+    if (minutes < 0) {
+      minutes += 60;
+      hours -= 1;
+    }
+    if (hours < 0) {
+      hours += 24;
+      days -= 1;
+    }
+    if (days < 0) {
+      const prevMonthDays = new Date(d2.getFullYear(), d2.getMonth(), 0).getDate();
+      days += prevMonthDays;
+      months -= 1;
+    }
+    if (months < 0) {
+      months += 12;
+      years -= 1;
+    }
+
+    const parts = [];
+    if (years > 0) parts.push(`${years}y`);
+    if (months > 0) parts.push(`${months}mo`);
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 && parts.length < 4) parts.push(`${hours}h`);
+    if (minutes > 0 && parts.length < 4) parts.push(`${minutes}m`);
+    if (!parts.length) parts.push('< 1m');
+
+    const text = isPast ? `${parts.join(' ')} ago` : parts.join(' ');
+    const badge = isPast ? '⏪ PAST EVENT • ELAPSED' : '⏳ UPCOMING • COUNTDOWN';
+    return {
+      text,
+      badge,
+      formattedDate,
+      isPast,
+      isNow: false,
+      years,
+      months,
+      days,
+      hours,
+      minutes,
+    };
+  }
+
+  function compassBearing(lat1, lon1, lat2, lon2) {
+    if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return '';
+    const toRad = (d) => (d * Math.PI) / 180;
+    const toDeg = (r) => (r * 180) / Math.PI;
+    const dLon = toRad(lon2 - lon1);
+    const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+    const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+    const brng = (toDeg(Math.atan2(y, x)) + 360) % 360;
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[Math.round(brng / 45) % 8];
+  }
+
+  function formatPinDistanceReadout(lat1, lon1, lat2, lon2) {
+    if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return '';
+    const meters = haversineMeters(Number(lat1), Number(lon1), Number(lat2), Number(lon2));
+    if (!Number.isFinite(meters)) return '';
+    const dir = compassBearing(Number(lat1), Number(lon1), Number(lat2), Number(lon2));
+    const mi = meters / 1609.344;
+    const distStr = mi < 0.15 ? `${Math.round(meters * 3.28084)} ft` : `${mi.toFixed(1)} mi`;
+    const walkMins = Math.max(1, Math.round(meters / 80));
+    const walkStr = mi <= 2.5 ? ` • ~${walkMins} min walk` : '';
+    return `${distStr} ${dir}${walkStr}`;
   }
 
   function formatMiles(meters) {
@@ -260,6 +386,29 @@
         },
       ],
       theme: currentTheme || 'dark',
+      pins: [
+        {
+          id: 'pin_dm_parking',
+          kind: 'parking',
+          name: 'Scranton Business Park — Lot B, Spot 14',
+          note: 'Parked behind Vance Refrigeration • Sebring convertible',
+          lat: 41.4091,
+          lon: -75.6628,
+          addedBy: 'Michael',
+          createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 'pin_dm_meetup',
+          kind: 'meetup',
+          name: 'Dunder Mifflin Conference Room Rally Point',
+          note: 'Meet here at 5:30 PM sharp before heading to Poor Richard’s',
+          lat: 41.40897,
+          lon: -75.66241,
+          addedBy: 'Dwight',
+          createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+        },
+      ],
+      deletedPinIds: [],
       microModules: [
         {
           id: 'mm_dm_codes',
@@ -332,6 +481,8 @@
         collabUrl: raw?.music?.collabUrl || DEFAULT_PLAYLIST_URL,
       },
       messages: Array.isArray(raw?.messages) ? raw.messages : [],
+      pins: Array.isArray(raw?.pins) ? raw.pins : [],
+      deletedPinIds: Array.isArray(raw?.deletedPinIds) ? raw.deletedPinIds : [],
       microModules: Array.isArray(raw?.microModules) ? raw.microModules : [],
       deletedMicroIds: Array.isArray(raw?.deletedMicroIds) ? raw.deletedMicroIds : [],
     };
@@ -373,6 +524,14 @@
     }
     const mergedMsgs = [...msgMap.values()].sort((x, y) => Date.parse(x.createdAt || 0) - Date.parse(y.createdAt || 0));
 
+    // Merge pins (parking & meetup places)
+    const delPins = new Set([...(a.deletedPinIds || []), ...(b.deletedPinIds || [])]);
+    const pinMap = new Map();
+    for (const p of [...(a.pins || []), ...(b.pins || [])]) {
+      if (!p || !p.id || delPins.has(p.id)) continue;
+      pinMap.set(p.id, p);
+    }
+
     // Merge microModules
     const delMm = new Set([...(a.deletedMicroIds || []), ...(b.deletedMicroIds || [])]);
     const mmMap = new Map();
@@ -401,6 +560,8 @@
         deletedIds: [...delTx],
       },
       messages: mergedMsgs.slice(-50),
+      pins: [...pinMap.values()],
+      deletedPinIds: [...delPins],
       microModules: [...mmMap.values()],
       deletedMicroIds: [...delMm],
     };
@@ -534,7 +695,7 @@
       </div>
       <div class="merge-diff-row">
         <span class="muted">Backup Contents</span>
-        <strong style="color:var(--lime);">${esc(entry.summary)}</strong>
+        <strong style="color:var(--accent-ink);">${esc(entry.summary)}</strong>
       </div>
       <div class="merge-diff-row">
         <span class="muted">Current Active State</span>
@@ -578,6 +739,7 @@
       },
       music: s.music,
       messages: (s.messages || []).map((m) => ({ id: m.id, text: m.text, author: m.author })),
+      pins: (s.pins || []).map((p) => ({ id: p.id, kind: p.kind, name: p.name, note: p.note, lat: p.lat, lon: p.lon })),
       microModules: s.microModules || [],
     });
   }
@@ -688,7 +850,24 @@
       }
     });
 
-    // 4. Micro-Modules & Crew Diff
+    // 4. Micro-Modules, Pins & Crew Diff
+    const locPinMap = new Map((local.pins || []).map((p) => [String(p.id), p]));
+    const incPinMap = new Map((incoming.pins || []).map((p) => [String(p.id), p]));
+    const allPinIds = new Set([...locPinMap.keys(), ...incPinMap.keys()]);
+    allPinIds.forEach((id) => {
+      const l = locPinMap.get(id);
+      const r = incPinMap.get(id);
+      const p = r || l;
+      const badgeIco = p.kind === 'meetup' ? '🤝' : '🅿️';
+      if (l && !r) {
+        stopDiffCount++;
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>${badgeIco} ${esc(p.name)}</strong><div class="muted">${esc(p.note || 'Pin')}</div></div><span class="diff-tag local">Only on Device</span></div>`);
+      } else if (!l && r) {
+        stopDiffCount++;
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>${badgeIco} ${esc(p.name)}</strong><div class="muted">${esc(p.note || 'Pin')}</div></div><span class="diff-tag incoming">+ New in Link</span></div>`);
+      }
+    });
+
     const locMmMap = new Map((local.microModules || []).map((m) => [String(m.id), m]));
     const incMmMap = new Map((incoming.microModules || []).map((m) => [String(m.id), m]));
     const allMmIds = new Set([...locMmMap.keys(), ...incMmMap.keys()]);
@@ -916,20 +1095,41 @@
       });
     }
 
+    if (Array.isArray(aiPatch.addPins)) {
+      aiPatch.addPins.forEach((p) => {
+        if (!p || !p.name) return;
+        const id = p.id || 'pin_ai_' + deterministicHashNum(JSON.stringify(p));
+        if (!st.pins.some((x) => x.id === id)) {
+          st.pins.push({
+            id,
+            kind: p.kind === 'meetup' ? 'meetup' : 'parking',
+            name: String(p.name),
+            note: String(p.note || ''),
+            lat: Number(p.lat ?? st.location?.lat ?? 41.40897),
+            lon: Number(p.lon ?? st.location?.lon ?? -75.66241),
+            addedBy: String(p.addedBy || 'AI Assistant'),
+            createdAt: new Date().toISOString(),
+          });
+        }
+      });
+    }
+
     if (Array.isArray(aiPatch.addMicroModules)) {
       aiPatch.addMicroModules.forEach((mm) => {
         if (!mm || !mm.title) return;
-        const id = mm.id || 'mm_ai_' + deterministicHashNum(mm.title + (mm.type || ''));
+        const id = mm.id || 'mm_ai_' + deterministicHashNum(mm.title + (mm.type || '') + (mm.code || ''));
         if (!st.microModules.some((x) => x.id === id)) {
           st.microModules.push({
             id,
-            type: mm.type || 'kv',
+            type: mm.type || (mm.code ? 'script' : 'kv'),
             title: String(mm.title),
             icon: String(mm.icon || '🧩'),
             items: Array.isArray(mm.items) ? mm.items : [],
             pairs: Array.isArray(mm.pairs) ? mm.pairs : [],
             options: Array.isArray(mm.options) ? mm.options : [],
             targetTime: mm.targetTime || null,
+            code: mm.code ? String(mm.code) : undefined,
+            data: mm.data && typeof mm.data === 'object' ? mm.data : undefined,
           });
         }
       });
@@ -1631,7 +1831,7 @@
       balances.push({ name, amount: net });
       const isPos = net >= 0.01;
       const isNeg = net <= -0.01;
-      const col = isPos ? 'var(--lime)' : (isNeg ? 'var(--coral)' : 'var(--muted)');
+      const col = isPos ? 'var(--accent-ink)' : (isNeg ? 'var(--danger-text)' : 'var(--muted)');
       const lbl = isPos ? 'GETS BACK' : (isNeg ? 'OWES' : 'EVEN');
       const cell = document.createElement('div');
       cell.className = 'split-bal-cell';
@@ -1661,9 +1861,9 @@
           row.className = 'settle-row';
           row.innerHTML = `
             <div>
-              <strong style="color:var(--coral);">${esc(d.name)}</strong>
+              <strong style="color:var(--danger-text);">${esc(d.name)}</strong>
               <span class="muted" style="margin:0 6px;">pays</span>
-              <strong style="color:var(--lime);">${esc(c.name)}</strong>
+              <strong style="color:var(--accent-ink);">${esc(c.name)}</strong>
             </div>
             <strong style="font-size:1.1rem;">$${amt.toFixed(2)}</strong>`;
           settleBox.appendChild(row);
@@ -1698,7 +1898,7 @@
           <div style="font-weight:800; font-size:1.08rem;">$${Number(t.amount).toFixed(2)}</div>
           <div style="display:flex; gap:6px; justify-content:flex-end; margin-top:4px;">
             <button type="button" class="subtle-pill-btn edit-tx-btn" style="padding:2px 8px; font-size:0.7rem;">Edit</button>
-            <button type="button" class="subtle-pill-btn del-tx-btn" style="padding:2px 8px; font-size:0.7rem; color:var(--coral);">Delete</button>
+            <button type="button" class="subtle-pill-btn del-tx-btn" style="padding:2px 8px; font-size:0.7rem; color:var(--danger-text);">Delete</button>
           </div>
         </div>`;
       row.querySelector('.edit-tx-btn').addEventListener('click', () => openExpenseModal(t.type, t));
@@ -1872,10 +2072,10 @@
     if (dest) {
       const destRow = document.createElement('div');
       destRow.className = 'stop-row';
-      destRow.style.borderColor = 'rgba(200, 255, 61, 0.35)';
+      destRow.style.borderColor = 'var(--badge-border)';
       destRow.innerHTML = `
         <div style="min-width:0;">
-          <div style="font-weight:800; color:var(--lime);">🏁 Final Dest: ${esc(dest.name)}</div>
+          <div style="font-weight:800; color:var(--accent-ink);">🏁 Final Dest: ${esc(dest.name)}</div>
           <div class="muted">${esc(dest.label || '')}${loc.remainingSec != null ? ' • ' + formatDuration(loc.remainingSec) + ' left' : ''}</div>
         </div>
         <button class="subtle-pill-btn remove-dest-inline" type="button" title="Clear Destination">Clear</button>`;
@@ -1917,6 +2117,58 @@
 
     populateStopsContainer(document.getElementById('stops-list'), stops, dest, loc);
     populateStopsContainer(document.getElementById('sheet-current-stops-list'), stops, dest, loc);
+    renderPins();
+  }
+
+  function renderPins() {
+    if (!appState) return;
+    const pins = appState.pins || [];
+    const loc = appState.location || {};
+
+    ['home-pins-list', 'stops-pins-list'].forEach((boxId) => {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      box.innerHTML = '';
+      if (!pins.length) {
+        box.innerHTML = `<div class="muted" style="text-align:center; padding:8px 0;">No parking or meetup pins dropped yet — tap <strong>+ Drop Pin</strong> to remember a parking spot or set a crew rally point!</div>`;
+        return;
+      }
+      pins.forEach((p) => {
+        const isMeetup = p.kind === 'meetup';
+        const badgeLabel = isMeetup ? '🤝 MEETUP PLACE' : '🅿️ PARKING SPOT';
+        const distInfo = loc.lat != null && p.lat != null ? formatPinDistanceReadout(loc.lat, loc.lon, p.lat, p.lon) : '';
+        const gmapsWalk = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}&travelmode=walking`;
+        const appleWalk = `https://maps.apple.com/?daddr=${p.lat},${p.lon}&dirflg=w`;
+
+        const row = document.createElement('div');
+        row.className = 'pin-card-row';
+        row.innerHTML = `
+          <div class="pin-card-top">
+            <div style="min-width:0;">
+              <span class="diff-tag ${isMeetup ? 'modified' : 'incoming'}" style="margin-bottom:4px;">${badgeLabel}</span>
+              <div style="font-weight:800; font-size:0.98rem;">${esc(p.name)}</div>
+              ${p.note ? `<div class="muted" style="margin-top:2px;">${esc(p.note)}</div>` : ''}
+              <div class="muted" style="font-size:0.76rem; margin-top:4px;">
+                Dropped by <strong>${esc(p.addedBy || 'Crew')}</strong>${distInfo ? ` • <strong style="color:var(--accent-ink);">${esc(distInfo)}</strong>` : ''}
+              </div>
+            </div>
+            <button type="button" class="subtle-pill-btn del-pin-btn" title="Remove Pin">✕</button>
+          </div>
+          <div class="pin-nav-links">
+            <a href="${esc(gmapsWalk)}" target="_blank" rel="noopener" class="btn btn-sm btn-lime">🚶 Walk There (Google Maps) ↗</a>
+            <a href="${esc(appleWalk)}" target="_blank" rel="noopener" class="btn btn-sm">🍎 Apple Maps ↗</a>
+          </div>`;
+
+        row.querySelector('.del-pin-btn').addEventListener('click', async () => {
+          appState.pins = appState.pins.filter((x) => x.id !== p.id);
+          if (!appState.deletedPinIds.includes(p.id)) appState.deletedPinIds.push(p.id);
+          renderPins();
+          updateMap();
+          await syncStateToUrl(`Removed pin "${p.name}"`);
+        });
+        box.appendChild(row);
+      });
+    });
   }
 
   function initMap() {
@@ -1929,6 +2181,7 @@
       attribution: 'Tiles &copy; Esri',
     }).addTo(map);
     stopMarkersLayer = L.layerGroup().addTo(map);
+    pinMarkersLayer = L.layerGroup().addTo(map);
     routeLayer = L.polyline([], { color: '#9D7BFF', weight: 4, opacity: 0.85 }).addTo(map);
   }
 
@@ -1937,6 +2190,7 @@
     const loc = appState.location || {};
     const dest = appState.trip?.destination;
     const stops = appState.trip?.stops || [];
+    const pins = appState.pins || [];
 
     routeLayer.setLatLngs(cachedRouteGeometry.length ? cachedRouteGeometry.map(([lon, lat]) => [lat, lon]) : []);
 
@@ -1950,6 +2204,21 @@
         weight: 2,
       }).bindPopup(`<b>Stop ${i + 1}: ${esc(s.name)}</b>`).addTo(stopMarkersLayer);
     });
+
+    if (pinMarkersLayer) {
+      pinMarkersLayer.clearLayers();
+      pins.forEach((p) => {
+        if (p.lat == null || p.lon == null) return;
+        const isMeetup = p.kind === 'meetup';
+        L.circleMarker([p.lat, p.lon], {
+          radius: 8,
+          color: '#07080D',
+          fillColor: isMeetup ? '#EC4899' : '#06B6D4',
+          fillOpacity: 1,
+          weight: 2.5,
+        }).bindPopup(`<b>${isMeetup ? '🤝 Meetup' : '🅿️ Parking'}: ${esc(p.name)}</b>${p.note ? '<br>' + esc(p.note) : ''}`).addTo(pinMarkersLayer);
+      });
+    }
 
     if (dest) {
       if (!destMarker) {
@@ -2010,6 +2279,1003 @@
     });
   }
 
+  // =========================================================
+  // UNIVERSAL TURING-COMPLETE DB-SCRIPT ENGINE FOR MICRO-MODULES
+  // =========================================================
+  function synthesizeScriptForPreset(type, dataObj = {}) {
+    if (type === 'countdown') {
+      return {
+        code: [
+          `state target = ${JSON.stringify(dataObj.target || '2026-12-25T11:11')}`,
+          `let t = timeDiff(state.target)`,
+          `big t.text sub=t.formattedDate badge=t.badge`,
+        ].join('\n'),
+        data: { target: dataObj.target || '2026-12-25T11:11' },
+      };
+    }
+    if (type === 'kv') {
+      const pairs = Array.isArray(dataObj.pairs) && dataObj.pairs.length
+        ? dataObj.pairs
+        : [{ k: 'Gate Code', v: '#1725' }, { k: 'Office Wi-Fi', v: 'DunderMifflin_5G' }];
+      return {
+        code: [
+          `for pair, i in state.pairs`,
+          `  kv pair.k, pair.v copy=true`,
+          `end`,
+          `input draft, "Add Key : Value (e.g. Room : 304)..." btn="+ Pin" -> pushPairs(state.pairs, state.draft); set state.draft = ""`,
+        ].join('\n'),
+        data: { pairs, draft: '' },
+      };
+    }
+    if (type === 'checklist') {
+      const items = Array.isArray(dataObj.items) && dataObj.items.length
+        ? dataObj.items
+        : [{ text: 'Dundie Trophies', done: true }, { text: 'Brown & Grey Balloons', done: false }];
+      return {
+        code: [
+          `let doneCount = 0`,
+          `for item, i in state.items`,
+          `  if item.done`,
+          `    set doneCount = doneCount + 1`,
+          `  end`,
+          `  check item.text, item.done -> set state.items[i].done = !state.items[i].done`,
+          `end`,
+          `progress (doneCount / max(1, len(state.items))) * 100`,
+          `input draft, "Add checklist item..." btn="+ Add" -> if state.draft then push(state.items, {"text":state.draft,"done":false}); set state.draft = "" end`,
+        ].join('\n'),
+        data: { items, draft: '' },
+      };
+    }
+    if (type === 'poll') {
+      const options = Array.isArray(dataObj.options) && dataObj.options.length
+        ? dataObj.options
+        : [{ label: "Alfredo's Pizza Cafe", votes: ['Michael', 'Jim'] }, { label: 'Pizza by Alfredo', votes: [] }];
+      return {
+        code: [
+          `for opt, i in state.options`,
+          `  let voted = includes(opt.votes, user)`,
+          `  let tally = len(opt.votes) + (len(opt.votes) == 1 ? " vote" : " votes") + (len(opt.votes) > 0 ? " (" + join(opt.votes, ", ") + ")" : "")`,
+          `  btn opt.label right=tally active=voted -> set state.options[i].votes = toggleIn(state.options[i].votes, user)`,
+          `end`,
+        ].join('\n'),
+        data: { options },
+      };
+    }
+    if (type === 'pins') {
+      const pins = Array.isArray(dataObj.pins) && dataObj.pins.length
+        ? dataObj.pins
+        : [{ kind: '🅿️ Parking', label: 'Level 3 Blue Giraffe, Spot 42', lat: 41.4091, lon: -75.6628, by: 'Michael' }];
+      return {
+        code: [
+          `for p, i in state.pins`,
+          `  pin p.kind + ": " + p.label, p.lat, p.lon note=("Dropped by " + p.by) index=i`,
+          `end`,
+          `input draft, "Spot or Meetup label (e.g. Lot C Row 4)..." btn="📍 Drop Pin" -> dropPin(state.pins, state.draft, "🅿️ Pin"); set state.draft = ""`,
+        ].join('\n'),
+        data: { pins, draft: '' },
+      };
+    }
+    if (type === 'rounds') {
+      const counts = dataObj.counts || { Michael: 1, Dwight: 0, Jim: 1, Pam: 0 };
+      return {
+        code: [
+          `state counts = {"Michael":1,"Dwight":0,"Jim":1,"Pam":0}`,
+          `for person, i in crew`,
+          `  let c = state.counts[person] ? state.counts[person] : 0`,
+          `  btn ("🍻 " + person + " bought a round") right=(c + " rounds") active=(c > 0) -> set state.counts[person] = (state.counts[person] ? state.counts[person] : 0) + 1`,
+          `end`,
+        ].join('\n'),
+        data: { counts },
+      };
+    }
+    if (type === 'turing') {
+      return {
+        code: [
+          `state n = 27`,
+          `state steps = 0`,
+          `state trail = [27]`,
+          `big ("n = " + state.n) sub=("Steps: " + state.steps + " • Peak: " + maxIn(state.trail)) badge="TURING-COMPLETE VM"`,
+          `text ("Trajectory: " + join(state.trail, " → ")) muted=true`,
+          `row`,
+          `  btn "Step (3n+1)" -> if state.n > 1 then set state.n = (state.n % 2 == 0 ? state.n / 2 : 3 * state.n + 1); set state.steps = state.steps + 1; push(state.trail, state.n) end`,
+          `  btn "Run while n>1" -> while state.n > 1 do set state.n = (state.n % 2 == 0 ? state.n / 2 : 3 * state.n + 1); set state.steps = state.steps + 1; push(state.trail, state.n) end`,
+          `  btn "Reset (n=27)" -> set state.n = 27; set state.steps = 0; set state.trail = [27]`,
+          `end`,
+        ].join('\n'),
+        data: { n: 27, steps: 0, trail: [27] },
+      };
+    }
+    return {
+      code: dataObj.code || `state count = 0\nbig ("Count: " + state.count) badge="CUSTOM DB-SCRIPT"\nrow\n  btn "+1 Increment" -> set state.count = state.count + 1\n  btn "Reset" -> set state.count = 0\nend`,
+      data: dataObj.data || { count: 0 },
+    };
+  }
+
+  function ensureMicroModuleScript(mm) {
+    if (!mm) return mm;
+    if (!mm.data || typeof mm.data !== 'object') {
+      mm.data = {};
+    }
+    if (mm.type === 'countdown' && mm.targetTime && !mm.data.target) {
+      mm.data.target = mm.targetTime;
+    }
+    if (mm.type === 'kv' && Array.isArray(mm.pairs) && !mm.data.pairs) {
+      mm.data.pairs = mm.pairs;
+    }
+    if (mm.type === 'checklist' && Array.isArray(mm.items) && !mm.data.items) {
+      mm.data.items = mm.items;
+    }
+    if (mm.type === 'poll' && Array.isArray(mm.options) && !mm.data.options) {
+      mm.data.options = mm.options;
+    }
+    if (!mm.code || !String(mm.code).trim()) {
+      const synth = synthesizeScriptForPreset(mm.type || 'script', mm.data);
+      mm.code = synth.code;
+      mm.data = { ...synth.data, ...mm.data };
+    }
+    return mm;
+  }
+
+  function tokenizeDbExpr(src) {
+    const tokens = [];
+    const s = String(src || '');
+    let i = 0;
+    while (i < s.length) {
+      const ch = s[i];
+      if (/\s/.test(ch)) { i++; continue; }
+      const two = s.slice(i, i + 2);
+      if (['==', '!=', '<=', '>=', '&&', '||'].includes(two)) {
+        tokens.push({ type: 'op', val: two });
+        i += 2;
+        continue;
+      }
+      if ('+-*/%<>!?(),:[].{}'.includes(ch)) {
+        tokens.push({ type: 'punc', val: ch });
+        i++;
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        const quote = ch;
+        i++;
+        let str = '';
+        while (i < s.length && s[i] !== quote) {
+          if (s[i] === '\\' && i + 1 < s.length) {
+            const nxt = s[i + 1];
+            str += nxt === 'n' ? '\n' : nxt;
+            i += 2;
+          } else {
+            str += s[i++];
+          }
+        }
+        i++; // skip closing quote
+        tokens.push({ type: 'str', val: str });
+        continue;
+      }
+      if (/[0-9]/.test(ch) || (ch === '.' && /[0-9]/.test(s[i + 1] || ''))) {
+        let num = '';
+        while (i < s.length && /[0-9.]/.test(s[i])) num += s[i++];
+        tokens.push({ type: 'num', val: Number(num) });
+        continue;
+      }
+      if (/[a-zA-Z_$]/.test(ch)) {
+        let id = '';
+        while (i < s.length && /[a-zA-Z0-9_$]/.test(s[i])) id += s[i++];
+        if (id === 'and') tokens.push({ type: 'op', val: '&&' });
+        else if (id === 'or') tokens.push({ type: 'op', val: '||' });
+        else if (id === 'not') tokens.push({ type: 'punc', val: '!' });
+        else if (id === 'true') tokens.push({ type: 'bool', val: true });
+        else if (id === 'false') tokens.push({ type: 'bool', val: false });
+        else if (id === 'null') tokens.push({ type: 'null', val: null });
+        else tokens.push({ type: 'id', val: id });
+        continue;
+      }
+      i++;
+    }
+    return tokens;
+  }
+
+  function evalDbExpr(exprStr, env, vm) {
+    const tokens = tokenizeDbExpr(exprStr);
+    if (!tokens.length) return undefined;
+    let pos = 0;
+    const peek = () => tokens[pos];
+    const next = () => tokens[pos++];
+
+    function parseTernary() {
+      const cond = parseOr();
+      if (peek()?.val === '?') {
+        next();
+        const yes = parseTernary();
+        if (peek()?.val === ':') next();
+        const no = parseTernary();
+        return cond ? yes : no;
+      }
+      return cond;
+    }
+
+    function parseOr() {
+      let left = parseAnd();
+      while (peek()?.val === '||') {
+        next();
+        const right = parseAnd();
+        left = Boolean(left || right);
+      }
+      return left;
+    }
+
+    function parseAnd() {
+      let left = parseEq();
+      while (peek()?.val === '&&') {
+        next();
+        const right = parseEq();
+        left = Boolean(left && right);
+      }
+      return left;
+    }
+
+    function parseEq() {
+      let left = parseRel();
+      while (peek()?.val === '==' || peek()?.val === '!=') {
+        const op = next().val;
+        const right = parseRel();
+        left = op === '==' ? left == right : left != right;
+      }
+      return left;
+    }
+
+    function parseRel() {
+      let left = parseAdd();
+      while (['<', '<=', '>', '>='].includes(peek()?.val)) {
+        const op = next().val;
+        const right = parseAdd();
+        if (op === '<') left = left < right;
+        else if (op === '<=') left = left <= right;
+        else if (op === '>') left = left > right;
+        else left = left >= right;
+      }
+      return left;
+    }
+
+    function parseAdd() {
+      let left = parseMul();
+      while (peek()?.val === '+' || peek()?.val === '-') {
+        const op = next().val;
+        const right = parseMul();
+        left = op === '+' ? left + right : Number(left) - Number(right);
+      }
+      return left;
+    }
+
+    function parseMul() {
+      let left = parseUnary();
+      while (['*', '/', '%'].includes(peek()?.val)) {
+        const op = next().val;
+        const right = parseUnary();
+        if (op === '*') left = Number(left) * Number(right);
+        else if (op === '/') left = Number(right) === 0 ? 0 : Number(left) / Number(right);
+        else left = Number(left) % Number(right);
+      }
+      return left;
+    }
+
+    function parseUnary() {
+      if (peek()?.val === '!') { next(); return !parseUnary(); }
+      if (peek()?.val === '-') { next(); return -Number(parseUnary()); }
+      if (peek()?.val === '+') { next(); return +Number(parseUnary()); }
+      return parsePostfix();
+    }
+
+    function parsePostfix() {
+      let val = parsePrimary();
+      while (peek()) {
+        if (peek().val === '.') {
+          next();
+          const propTok = next();
+          if (propTok) val = val != null ? val[propTok.val] : undefined;
+        } else if (peek().val === '[') {
+          next();
+          const idx = parseTernary();
+          if (peek()?.val === ']') next();
+          val = val != null ? val[idx] : undefined;
+        } else if (peek().val === '(' && typeof val === 'function') {
+          next();
+          const args = [];
+          while (peek() && peek().val !== ')') {
+            args.push(parseTernary());
+            if (peek()?.val === ',') next();
+          }
+          if (peek()?.val === ')') next();
+          val = val(...args);
+        } else {
+          break;
+        }
+      }
+      return val;
+    }
+
+    function parsePrimary() {
+      const tok = peek();
+      if (!tok) return undefined;
+      if (tok.type === 'num' || tok.type === 'str' || tok.type === 'bool' || tok.type === 'null') {
+        next();
+        return tok.val;
+      }
+      if (tok.val === '(') {
+        next();
+        const v = parseTernary();
+        if (peek()?.val === ')') next();
+        return v;
+      }
+      if (tok.val === '[') {
+        next();
+        const arr = [];
+        while (peek() && peek().val !== ']') {
+          arr.push(parseTernary());
+          if (peek()?.val === ',') next();
+        }
+        if (peek()?.val === ']') next();
+        return arr;
+      }
+      if (tok.val === '{') {
+        next();
+        const obj = {};
+        while (peek() && peek().val !== '}') {
+          const kTok = next();
+          const k = kTok ? String(kTok.val) : '';
+          if (peek()?.val === ':') next();
+          obj[k] = parseTernary();
+          if (peek()?.val === ',') next();
+        }
+        if (peek()?.val === '}') next();
+        return obj;
+      }
+      if (tok.type === 'id') {
+        next();
+        const name = tok.val;
+        if (peek()?.val === '(') {
+          next();
+          const args = [];
+          while (peek() && peek().val !== ')') {
+            args.push(parseTernary());
+            if (peek()?.val === ',') next();
+          }
+          if (peek()?.val === ')') next();
+          return callDbFunction(name, args, env, vm);
+        }
+        if (name === 'state') return env.state;
+        if (name === 'user') return currentUser;
+        if (name === 'crew') return appState?.crew || ['Michael', 'Dwight', 'Jim', 'Pam'];
+        if (name === 'trip') {
+          return {
+            title: appState?.title || 'Trip',
+            spent: sumExpenses(appState || {}),
+            where: appState?.location?.whereAreWe || '',
+            lat: appState?.location?.lat ?? 41.40897,
+            lon: appState?.location?.lon ?? -75.66241,
+            speed: appState?.location?.speedMph ?? 0,
+          };
+        }
+        if (name in env.locals) return env.locals[name];
+        if (name in env.state) return env.state[name];
+        return undefined;
+      }
+      next();
+      return undefined;
+    }
+
+    return parseTernary();
+  }
+
+  function callDbFunction(name, args, env, vm) {
+    if (++vm.steps > vm.maxSteps) { vm.halted = true; return null; }
+    switch (name) {
+      case 'now': return Date.now();
+      case 'timeDiff':
+      case 'age': return formatRichTimeDiff(args[0]);
+      case 'len': return Array.isArray(args[0]) || typeof args[0] === 'string' ? args[0].length : 0;
+      case 'min': return Math.min(Number(args[0] || 0), Number(args[1] || 0));
+      case 'max': return Math.max(Number(args[0] || 0), Number(args[1] || 0));
+      case 'maxIn': return Array.isArray(args[0]) && args[0].length ? Math.max(...args[0].map(Number)) : 0;
+      case 'round': {
+        const d = Number(args[1] || 0);
+        const f = 10 ** d;
+        return Math.round(Number(args[0] || 0) * f) / f;
+      }
+      case 'floor': return Math.floor(Number(args[0] || 0));
+      case 'abs': return Math.abs(Number(args[0] || 0));
+      case 'sum': return Array.isArray(args[0]) ? args[0].reduce((a, b) => a + Number(b || 0), 0) : 0;
+      case 'join': return Array.isArray(args[0]) ? args[0].join(String(args[1] ?? ', ')) : '';
+      case 'includes': return Array.isArray(args[0]) ? args[0].includes(args[1]) : false;
+      case 'toggleIn': {
+        const arr = Array.isArray(args[0]) ? [...args[0]] : [];
+        const val = args[1];
+        return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
+      }
+      case 'push': {
+        if (Array.isArray(args[0])) args[0].push(args[1]);
+        return args[0];
+      }
+      case 'removeAt': {
+        if (Array.isArray(args[0])) args[0].splice(Number(args[1] || 0), 1);
+        return args[0];
+      }
+      case 'pushPairs': {
+        const arr = Array.isArray(args[0]) ? args[0] : [];
+        const raw = String(args[1] || '').trim();
+        if (!raw) return arr;
+        const idx = raw.indexOf(':');
+        if (idx !== -1) arr.push({ k: raw.slice(0, idx).trim(), v: raw.slice(idx + 1).trim() });
+        else arr.push({ k: raw, v: '' });
+        return arr;
+      }
+      case 'dropPin': {
+        const arr = Array.isArray(args[0]) ? args[0] : [];
+        const label = String(args[1] || '').trim() || 'Pinned Location';
+        const kind = String(args[2] || '🅿️ Pin');
+        const lat = appState?.location?.lat ?? 41.40897;
+        const lon = appState?.location?.lon ?? -75.66241;
+        arr.push({ kind, label, lat, lon, by: currentUser });
+        return arr;
+      }
+      case 'distMi': {
+        const m = haversineMeters(Number(args[0] || 0), Number(args[1] || 0), Number(args[2] || 0), Number(args[3] || 0));
+        return Math.round((m / 1609.344) * 10) / 10;
+      }
+      case 'compass': return compassBearing(Number(args[0] || 0), Number(args[1] || 0), Number(args[2] || 0), Number(args[3] || 0));
+      default: {
+        const fnDef = vm.functions[name];
+        if (fnDef) {
+          const childEnv = { state: env.state, locals: { ...env.locals } };
+          fnDef.params.forEach((p, idx) => { childEnv.locals[p] = args[idx]; });
+          const res = execDbBlock(fnDef.body, childEnv, vm);
+          return res?.returned ? res.value : undefined;
+        }
+        return undefined;
+      }
+    }
+  }
+
+  function assignDbLhs(lhsStr, val, env, vm) {
+    const clean = lhsStr.trim();
+    if (!clean.includes('.') && !clean.includes('[')) {
+      if (clean in env.locals) env.locals[clean] = val;
+      else env.state[clean] = val;
+      return;
+    }
+    const tokens = tokenizeDbExpr(clean);
+    if (!tokens.length) return;
+    let rootName = tokens[0].val;
+    let obj = rootName === 'state' ? env.state : (rootName in env.locals ? env.locals[rootName] : env.state[rootName]);
+    let i = 1;
+    const path = [];
+    while (i < tokens.length) {
+      if (tokens[i].val === '.') {
+        i++;
+        if (tokens[i]) path.push(tokens[i].val);
+        i++;
+      } else if (tokens[i].val === '[') {
+        i++;
+        let sub = '';
+        let depth = 1;
+        while (i < tokens.length && depth > 0) {
+          if (tokens[i].val === '[') depth++;
+          else if (tokens[i].val === ']') { depth--; if (depth === 0) { i++; break; } }
+          if (depth > 0) {
+            sub += tokens[i].type === 'str' ? JSON.stringify(tokens[i].val) : String(tokens[i].val) + ' ';
+            i++;
+          }
+        }
+        path.push(evalDbExpr(sub, env, vm));
+      } else {
+        i++;
+      }
+    }
+    if (!path.length) return;
+    for (let k = 0; k < path.length - 1; k++) {
+      if (obj == null) return;
+      obj = obj[path[k]];
+    }
+    if (obj != null) obj[path[path.length - 1]] = val;
+  }
+
+  function expandInlineDbLines(rawCode) {
+    const out = [];
+    String(rawCode || '')
+      .split(/\r?\n/)
+      .forEach((rawLine) => {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#') || line.startsWith('//')) return;
+        // Expand single-line `if <cond> then <body> end` or `while <cond> do <body> end`
+        const inlineIf = line.match(/^if\s+(.+?)\s+then\s+(.+?)\s+end$/i);
+        if (inlineIf) {
+          out.push(`if ${inlineIf[1]}`);
+          inlineIf[2].split(';').forEach((s) => { if (s.trim()) out.push(s.trim()); });
+          out.push('end');
+          return;
+        }
+        const inlineWhile = line.match(/^while\s+(.+?)\s+do\s+(.+?)\s+end$/i);
+        if (inlineWhile) {
+          out.push(`while ${inlineWhile[1]}`);
+          inlineWhile[2].split(';').forEach((s) => { if (s.trim()) out.push(s.trim()); });
+          out.push('end');
+          return;
+        }
+        if (line.includes('->')) {
+          out.push(line);
+          return;
+        }
+        line.split(';').forEach((part) => {
+          if (part.trim()) out.push(part.trim());
+        });
+      });
+    return out;
+  }
+
+  function splitTopLevelCommas(str) {
+    const parts = [];
+    let cur = '';
+    let depth = 0;
+    let inQuote = null;
+    for (let i = 0; i < str.length; i++) {
+      const c = str[i];
+      if (inQuote) {
+        cur += c;
+        if (c === '\\' && i + 1 < str.length) cur += str[++i];
+        else if (c === inQuote) inQuote = null;
+      } else if (c === '"' || c === "'") {
+        inQuote = c;
+        cur += c;
+      } else if (c === '(' || c === '[' || c === '{') {
+        depth++;
+        cur += c;
+      } else if (c === ')' || c === ']' || c === '}') {
+        depth = Math.max(0, depth - 1);
+        cur += c;
+      } else if (c === ',' && depth === 0) {
+        parts.push(cur.trim());
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    if (cur.trim()) parts.push(cur.trim());
+    return parts;
+  }
+
+  function extractNamedAttrs(restStr) {
+    // Extracts trailing key=expr attributes outside quotes/parens
+    const attrs = {};
+    let mainExpr = restStr;
+    const attrRegex = /\s+([a-zA-Z_]+)=((?:"[^"]*"|'[^']*'|\([^)]*\)|[^\s])+)/g;
+    let match;
+    let firstIdx = -1;
+    while ((match = attrRegex.exec(restStr)) !== null) {
+      if (firstIdx === -1) firstIdx = match.index;
+      attrs[match[1]] = match[2];
+    }
+    if (firstIdx !== -1) {
+      mainExpr = restStr.slice(0, firstIdx).trim();
+    }
+    return { mainExpr, attrs };
+  }
+
+  function findMatchingEnd(lines, startIdx) {
+    let depth = 1;
+    for (let i = startIdx + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (/^(if|while|for|fn|row)\b/i.test(l)) depth++;
+      else if (/^end\b/i.test(l)) {
+        depth--;
+        if (depth === 0) return i;
+      }
+    }
+    return lines.length - 1;
+  }
+
+  function execDbBlock(lines, env, vm, targetNodes = vm.nodes) {
+    let i = 0;
+    while (i < lines.length) {
+      if (++vm.steps > vm.maxSteps) {
+        vm.halted = true;
+        return { returned: false };
+      }
+      const line = lines[i];
+
+      // 1. state <key> = <expr>
+      let m = line.match(/^state\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(.+)$/);
+      if (m) {
+        const k = m[1];
+        if (env.state[k] === undefined) {
+          env.state[k] = evalDbExpr(m[2], env, vm);
+        }
+        i++;
+        continue;
+      }
+
+      // 2. let <key> = <expr>
+      m = line.match(/^let\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*(.+)$/);
+      if (m) {
+        env.locals[m[1]] = evalDbExpr(m[2], env, vm);
+        i++;
+        continue;
+      }
+
+      // 3. set <lhs> = <expr>
+      m = line.match(/^set\s+(.+?)\s*=\s*(.+)$/);
+      if (m) {
+        const val = evalDbExpr(m[2], env, vm);
+        assignDbLhs(m[1], val, env, vm);
+        i++;
+        continue;
+      }
+
+      // 4. return <expr>
+      m = line.match(/^return(?:\s+(.+))?$/);
+      if (m) {
+        return { returned: true, value: m[1] ? evalDbExpr(m[1], env, vm) : undefined };
+      }
+
+      // 5. fn <name>(<params>) ... end
+      m = line.match(/^fn\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(([^)]*)\)$/);
+      if (m) {
+        const endIdx = findMatchingEnd(lines, i);
+        const params = m[2].split(',').map((s) => s.trim()).filter(Boolean);
+        vm.functions[m[1]] = { params, body: lines.slice(i + 1, endIdx) };
+        i = endIdx + 1;
+        continue;
+      }
+
+      // 6. if <cond> ... [elif <cond> ...] [else ...] end
+      if (/^if\s+/i.test(line)) {
+        const endIdx = findMatchingEnd(lines, i);
+        const branches = [];
+        let curCond = line.replace(/^if\s+/i, '').trim();
+        let curStart = i + 1;
+        let depth = 0;
+        for (let k = i + 1; k <= endIdx; k++) {
+          const l = lines[k];
+          if (/^(if|while|for|fn|row)\b/i.test(l)) depth++;
+          else if (/^end\b/i.test(l) && depth > 0) depth--;
+          else if (depth === 0 && (/^elif\s+/i.test(l) || /^else$/i.test(l) || k === endIdx)) {
+            branches.push({ cond: curCond, body: lines.slice(curStart, k) });
+            if (/^elif\s+/i.test(l)) {
+              curCond = l.replace(/^elif\s+/i, '').trim();
+              curStart = k + 1;
+            } else if (/^else$/i.test(l)) {
+              curCond = 'true';
+              curStart = k + 1;
+            }
+          }
+        }
+        for (const b of branches) {
+          if (evalDbExpr(b.cond, env, vm)) {
+            const res = execDbBlock(b.body, env, vm, targetNodes);
+            if (res?.returned) return res;
+            break;
+          }
+        }
+        i = endIdx + 1;
+        continue;
+      }
+
+      // 7. while <cond> ... end
+      if (/^while\s+/i.test(line)) {
+        const endIdx = findMatchingEnd(lines, i);
+        const condExpr = line.replace(/^while\s+/i, '').trim();
+        const body = lines.slice(i + 1, endIdx);
+        while (evalDbExpr(condExpr, env, vm)) {
+          if (++vm.steps > vm.maxSteps) { vm.halted = true; break; }
+          const res = execDbBlock(body, env, vm, targetNodes);
+          if (res?.returned) return res;
+          if (vm.halted) break;
+        }
+        i = endIdx + 1;
+        continue;
+      }
+
+      // 8. for <val>[, <idx>] in <expr> ... end
+      m = line.match(/^for\s+([a-zA-Z_$][a-zA-Z0-9_$]*)(?:\s*,\s*([a-zA-Z_$][a-zA-Z0-9_$]*))?\s+in\s+(.+)$/i);
+      if (m) {
+        const endIdx = findMatchingEnd(lines, i);
+        const itemVar = m[1];
+        const idxVar = m[2];
+        const listVal = evalDbExpr(m[3], env, vm);
+        const body = lines.slice(i + 1, endIdx);
+        if (Array.isArray(listVal)) {
+          for (let idx = 0; idx < listVal.length; idx++) {
+            env.locals[itemVar] = listVal[idx];
+            if (idxVar) env.locals[idxVar] = idx;
+            const res = execDbBlock(body, env, vm, targetNodes);
+            if (res?.returned) return res;
+            if (vm.halted) break;
+          }
+        }
+        i = endIdx + 1;
+        continue;
+      }
+
+      // 9. row ... end
+      if (/^row$/i.test(line)) {
+        const endIdx = findMatchingEnd(lines, i);
+        const rowChildren = [];
+        execDbBlock(lines.slice(i + 1, endIdx), env, vm, rowChildren);
+        targetNodes.push({ kind: 'row', children: rowChildren });
+        i = endIdx + 1;
+        continue;
+      }
+
+      // 10. UI Emitters: countdown, big, kv, check, btn, input, pin, progress, text
+      if (/^countdown\s+/i.test(line)) {
+        const { mainExpr, attrs } = extractNamedAttrs(line.replace(/^countdown\s+/i, '').trim());
+        const targetVal = evalDbExpr(mainExpr, env, vm);
+        const info = formatRichTimeDiff(targetVal);
+        const customSub = attrs.label ? evalDbExpr(attrs.label, env, vm) : null;
+        targetNodes.push({
+          kind: 'big',
+          text: info.text,
+          badge: info.badge,
+          sub: customSub ? `${customSub} • ${info.formattedDate}` : info.formattedDate,
+        });
+        i++;
+        continue;
+      }
+
+      if (/^big\s+/i.test(line)) {
+        const { mainExpr, attrs } = extractNamedAttrs(line.replace(/^big\s+/i, '').trim());
+        targetNodes.push({
+          kind: 'big',
+          text: String(evalDbExpr(mainExpr, env, vm) ?? ''),
+          sub: attrs.sub ? String(evalDbExpr(attrs.sub, env, vm) ?? '') : '',
+          badge: attrs.badge ? String(evalDbExpr(attrs.badge, env, vm) ?? '') : '',
+        });
+        i++;
+        continue;
+      }
+
+      if (/^kv\s+/i.test(line)) {
+        const { mainExpr, attrs } = extractNamedAttrs(line.replace(/^kv\s+/i, '').trim());
+        const parts = splitTopLevelCommas(mainExpr);
+        targetNodes.push({
+          kind: 'kv',
+          k: String(evalDbExpr(parts[0] || '""', env, vm) ?? ''),
+          v: String(evalDbExpr(parts[1] || '""', env, vm) ?? ''),
+          copy: attrs.copy ? Boolean(evalDbExpr(attrs.copy, env, vm)) : true,
+        });
+        i++;
+        continue;
+      }
+
+      if (/^check\s+/i.test(line)) {
+        const arrowIdx = line.indexOf('->');
+        const leftPart = (arrowIdx !== -1 ? line.slice(0, arrowIdx) : line).replace(/^check\s+/i, '').trim();
+        const actionCode = arrowIdx !== -1 ? line.slice(arrowIdx + 2).trim() : '';
+        const parts = splitTopLevelCommas(leftPart);
+        const snapshotLocals = { ...env.locals };
+        targetNodes.push({
+          kind: 'check',
+          label: String(evalDbExpr(parts[0] || '""', env, vm) ?? ''),
+          done: Boolean(evalDbExpr(parts[1] || 'false', env, vm)),
+          actionCode,
+          locals: snapshotLocals,
+        });
+        i++;
+        continue;
+      }
+
+      if (/^btn\s+/i.test(line)) {
+        const arrowIdx = line.indexOf('->');
+        const leftPart = (arrowIdx !== -1 ? line.slice(0, arrowIdx) : line).replace(/^btn\s+/i, '').trim();
+        const actionCode = arrowIdx !== -1 ? line.slice(arrowIdx + 2).trim() : '';
+        const { mainExpr, attrs } = extractNamedAttrs(leftPart);
+        const snapshotLocals = { ...env.locals };
+        targetNodes.push({
+          kind: 'btn',
+          label: String(evalDbExpr(mainExpr, env, vm) ?? 'Action'),
+          right: attrs.right ? String(evalDbExpr(attrs.right, env, vm) ?? '') : '',
+          active: attrs.active ? Boolean(evalDbExpr(attrs.active, env, vm)) : false,
+          actionCode,
+          locals: snapshotLocals,
+        });
+        i++;
+        continue;
+      }
+
+      if (/^input\s+/i.test(line)) {
+        const arrowIdx = line.indexOf('->');
+        const leftPart = (arrowIdx !== -1 ? line.slice(0, arrowIdx) : line).replace(/^input\s+/i, '').trim();
+        const actionCode = arrowIdx !== -1 ? line.slice(arrowIdx + 2).trim() : '';
+        const { mainExpr, attrs } = extractNamedAttrs(leftPart);
+        const parts = splitTopLevelCommas(mainExpr);
+        const stateKey = (parts[0] || 'draft').replace(/^state\./, '').trim();
+        const placeholder = parts[1] ? String(evalDbExpr(parts[1], env, vm) ?? '') : 'Enter value...';
+        const btnLabel = attrs.btn ? String(evalDbExpr(attrs.btn, env, vm) ?? 'Add') : 'Add';
+        const snapshotLocals = { ...env.locals };
+        targetNodes.push({
+          kind: 'input',
+          stateKey,
+          placeholder,
+          btnLabel,
+          actionCode,
+          locals: snapshotLocals,
+        });
+        i++;
+        continue;
+      }
+
+      if (/^pin\s+/i.test(line)) {
+        const { mainExpr, attrs } = extractNamedAttrs(line.replace(/^pin\s+/i, '').trim());
+        const parts = splitTopLevelCommas(mainExpr);
+        targetNodes.push({
+          kind: 'pin',
+          label: String(evalDbExpr(parts[0] || '""', env, vm) ?? 'Pinned Spot'),
+          lat: Number(evalDbExpr(parts[1] || '41.40897', env, vm)),
+          lon: Number(evalDbExpr(parts[2] || '-75.66241', env, vm)),
+          note: attrs.note ? String(evalDbExpr(attrs.note, env, vm) ?? '') : '',
+          index: attrs.index != null ? Number(evalDbExpr(attrs.index, env, vm)) : null,
+        });
+        i++;
+        continue;
+      }
+
+      if (/^progress\s+/i.test(line)) {
+        const pct = Number(evalDbExpr(line.replace(/^progress\s+/i, '').trim(), env, vm) || 0);
+        targetNodes.push({ kind: 'progress', pct: Math.max(0, Math.min(100, pct)) });
+        i++;
+        continue;
+      }
+
+      if (/^text\s+/i.test(line)) {
+        const { mainExpr, attrs } = extractNamedAttrs(line.replace(/^text\s+/i, '').trim());
+        targetNodes.push({
+          kind: 'text',
+          text: String(evalDbExpr(mainExpr, env, vm) ?? ''),
+          muted: attrs.muted ? Boolean(evalDbExpr(attrs.muted, env, vm)) : false,
+        });
+        i++;
+        continue;
+      }
+
+      // Fallback: evaluate as expression statement
+      evalDbExpr(line, env, vm);
+      i++;
+    }
+    return { returned: false };
+  }
+
+  function runDbScript(mm) {
+    ensureMicroModuleScript(mm);
+    const vm = { steps: 0, maxSteps: 25000, halted: false, nodes: [], functions: {} };
+    const env = { state: mm.data, locals: {} };
+    try {
+      const lines = expandInlineDbLines(mm.code);
+      execDbBlock(lines, env, vm, vm.nodes);
+      if (vm.halted) {
+        vm.nodes.push({ kind: 'text', text: '⚡ Halted: step limit (25,000 ops) reached.', muted: true });
+      }
+    } catch (err) {
+      vm.nodes.push({ kind: 'text', text: `⚠️ Script error: ${err?.message || 'Invalid syntax'}`, muted: true });
+    }
+    return { vm, env };
+  }
+
+  function renderDbNodes(nodes, mm, env, vm) {
+    const frag = document.createDocumentFragment();
+    nodes.forEach((node) => {
+      if (node.kind === 'big') {
+        const el = document.createElement('div');
+        el.className = 'mm-big-box';
+        el.innerHTML = `
+          ${node.badge ? `<span class="share-enc-badge" style="margin-bottom:4px;">${esc(node.badge)}</span>` : ''}
+          <div class="mm-big-val">${esc(node.text)}</div>
+          ${node.sub ? `<div class="muted" style="margin-top:4px;">${esc(node.sub)}</div>` : ''}`;
+        frag.appendChild(el);
+      } else if (node.kind === 'kv') {
+        const el = document.createElement('div');
+        el.className = 'mm-kv-row';
+        el.innerHTML = `
+          <span class="muted" style="font-weight:700;">${esc(node.k)}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <strong style="font-size:0.95rem;">${esc(node.v)}</strong>
+            ${node.copy ? `<button type="button" class="subtle-pill-btn copy-kv-btn" style="padding:2px 8px; font-size:0.7rem;">Copy</button>` : ''}
+          </div>`;
+        el.querySelector('.copy-kv-btn')?.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(node.v);
+            showToast(`Copied "${node.k}"!`);
+          } catch {}
+        });
+        frag.appendChild(el);
+      } else if (node.kind === 'check') {
+        const el = document.createElement('div');
+        el.className = `mm-check-row ${node.done ? 'done' : ''}`;
+        el.innerHTML = `<span>${node.done ? '✅' : '⬜'}</span><span>${esc(node.label)}</span>`;
+        el.addEventListener('click', async () => {
+          if (node.actionCode) {
+            const actLines = expandInlineDbLines(node.actionCode);
+            execDbBlock(actLines, { state: mm.data, locals: { ...node.locals } }, vm, []);
+            if (Array.isArray(mm.data.items)) mm.items = mm.data.items;
+            renderMicroModules();
+            await syncStateToUrl(`Updated "${mm.title}"`);
+          }
+        });
+        frag.appendChild(el);
+      } else if (node.kind === 'btn') {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `mm-poll-btn ${node.active ? 'voted' : ''}`;
+        btn.innerHTML = `
+          <span>${esc(node.label)}</span>
+          ${node.right ? `<span class="muted" style="font-size:0.8rem;">${esc(node.right)}</span>` : ''}`;
+        btn.addEventListener('click', async () => {
+          if (node.actionCode) {
+            const actLines = expandInlineDbLines(node.actionCode);
+            execDbBlock(actLines, { state: mm.data, locals: { ...node.locals } }, vm, []);
+            if (Array.isArray(mm.data.options)) mm.options = mm.data.options;
+            renderMicroModules();
+            await syncStateToUrl(`Updated "${mm.title}"`);
+          }
+        });
+        frag.appendChild(btn);
+      } else if (node.kind === 'input') {
+        const row = document.createElement('div');
+        row.className = 'input-row';
+        row.style.marginTop = '8px';
+        row.innerHTML = `
+          <input type="text" class="input" style="padding:9px 12px; font-size:0.9rem;" placeholder="${esc(node.placeholder)}" value="${esc(mm.data[node.stateKey] || '')}">
+          <button type="button" class="btn btn-sm btn-lime">${esc(node.btnLabel)}</button>`;
+        const inp = row.querySelector('input');
+        const btn = row.querySelector('button');
+        const trigger = async () => {
+          mm.data[node.stateKey] = inp.value.trim();
+          if (node.actionCode) {
+            const actLines = expandInlineDbLines(node.actionCode);
+            execDbBlock(actLines, { state: mm.data, locals: { ...node.locals } }, vm, []);
+            if (Array.isArray(mm.data.items)) mm.items = mm.data.items;
+            if (Array.isArray(mm.data.pairs)) mm.pairs = mm.data.pairs;
+            renderMicroModules();
+            await syncStateToUrl(`Updated "${mm.title}"`);
+          }
+        };
+        btn.addEventListener('click', trigger);
+        inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); trigger(); } });
+        frag.appendChild(row);
+      } else if (node.kind === 'pin') {
+        const loc = appState?.location || {};
+        const distInfo = loc.lat != null && node.lat != null ? formatPinDistanceReadout(loc.lat, loc.lon, node.lat, node.lon) : '';
+        const gmapsWalk = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lon}&travelmode=walking`;
+        const el = document.createElement('div');
+        el.className = 'pin-card-row';
+        el.innerHTML = `
+          <div class="pin-card-top">
+            <div>
+              <div style="font-weight:800; font-size:0.95rem;">${esc(node.label)}</div>
+              <div class="muted" style="font-size:0.78rem;">${esc(node.note)}${distInfo ? ` • <strong style="color:var(--accent-ink);">${esc(distInfo)}</strong>` : ''}</div>
+            </div>
+            <a href="${esc(gmapsWalk)}" target="_blank" rel="noopener" class="btn btn-sm btn-lime">🚶 Walk ↗</a>
+          </div>`;
+        frag.appendChild(el);
+      } else if (node.kind === 'progress') {
+        const tr = document.createElement('div');
+        tr.className = 'progress-track';
+        tr.style.margin = '8px 0';
+        tr.innerHTML = `<div class="progress-fill" style="width:${node.pct.toFixed(0)}%;"></div>`;
+        frag.appendChild(tr);
+      } else if (node.kind === 'text') {
+        const p = document.createElement('div');
+        p.className = node.muted ? 'muted' : '';
+        p.style.marginBottom = '6px';
+        p.textContent = node.text;
+        frag.appendChild(p);
+      } else if (node.kind === 'row') {
+        const r = document.createElement('div');
+        r.className = 'mm-row-flex';
+        r.appendChild(renderDbNodes(node.children || [], mm, env, vm));
+        frag.appendChild(r);
+      }
+    });
+    return frag;
+  }
+
   function renderMicroModules() {
     if (!appState) return;
     const box = document.getElementById('home-micromodules-box');
@@ -2018,84 +3284,27 @@
 
     const mms = appState.microModules || [];
     mms.forEach((mm) => {
+      ensureMicroModuleScript(mm);
       const card = document.createElement('section');
       card.className = 'card';
-      const icon = mm.icon || (mm.type === 'checklist' ? '📦' : mm.type === 'poll' ? '🍕' : mm.type === 'countdown' ? '⏳' : '🔑');
+      const icon = mm.icon || (mm.type === 'checklist' ? '📦' : mm.type === 'poll' ? '🍕' : mm.type === 'countdown' ? '⏳' : mm.type === 'turing' ? '🧮' : '🔑');
 
-      let bodyHtml = '';
-      if (mm.type === 'checklist') {
-        bodyHtml = (mm.items || [])
-          .map(
-            (item, idx) => `
-          <div class="mm-check-row ${item.done ? 'done' : ''}" data-idx="${idx}">
-            <span>${item.done ? '✅' : '⬜'}</span>
-            <span>${esc(item.text)}</span>
-          </div>`
-          )
-          .join('');
-      } else if (mm.type === 'kv') {
-        bodyHtml = (mm.pairs || [])
-          .map(
-            (pair) => `
-          <div class="mm-kv-row">
-            <span class="muted" style="font-weight:700;">${esc(pair.k)}</span>
-            <strong style="font-size:0.95rem;">${esc(pair.v)}</strong>
-          </div>`
-          )
-          .join('');
-      } else if (mm.type === 'poll') {
-        bodyHtml = (mm.options || [])
-          .map((opt, idx) => {
-            const votes = Array.isArray(opt.votes) ? opt.votes : [];
-            const voted = votes.includes(currentUser);
-            return `
-            <button type="button" class="mm-poll-btn ${voted ? 'voted' : ''}" data-idx="${idx}">
-              <span>${esc(opt.label)}</span>
-              <span class="muted">${votes.length} vote${votes.length === 1 ? '' : 's'}${votes.length ? ' (' + esc(votes.join(', ')) + ')' : ''}</span>
-            </button>`;
-          })
-          .join('');
-      } else if (mm.type === 'countdown') {
-        const diffSec = mm.targetTime ? Math.max(0, Math.round((Date.parse(mm.targetTime) - Date.now()) / 1000)) : 0;
-        bodyHtml = `
-          <div style="text-align:center; padding:8px 0;">
-            <div style="font-size:2rem; font-weight:800; color:var(--lime);">${diffSec > 0 ? esc(formatDuration(diffSec)) : 'Happening Now!'}</div>
-            <div class="muted">${mm.targetTime ? new Date(mm.targetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
-          </div>`;
-      }
+      const { vm, env } = runDbScript(mm);
 
       card.innerHTML = `
         <div class="card-head">
           <div class="card-title">${esc(icon)} ${esc(mm.title)}</div>
-          <button type="button" class="subtle-pill-btn del-mm-btn" style="font-size:0.7rem;">✕ Remove</button>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="subtle-pill-btn edit-mm-script-btn" style="font-size:0.72rem;" title="Inspect or Edit DB-Script Code">&lt;/&gt; Script</button>
+            <button type="button" class="subtle-pill-btn del-mm-btn" style="font-size:0.72rem;">✕ Remove</button>
+          </div>
         </div>
-        <div>${bodyHtml}</div>`;
+        <div class="mm-body-mount"></div>`;
 
-      card.querySelectorAll('.mm-check-row').forEach((row) => {
-        row.addEventListener('click', async () => {
-          const i = Number(row.dataset.idx);
-          if (mm.items?.[i]) {
-            mm.items[i].done = !mm.items[i].done;
-            renderMicroModules();
-            await syncStateToUrl(`Updated checklist "${mm.title}"`);
-          }
-        });
-      });
+      card.querySelector('.mm-body-mount').appendChild(renderDbNodes(vm.nodes, mm, env, vm));
 
-      card.querySelectorAll('.mm-poll-btn').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const i = Number(btn.dataset.idx);
-          if (mm.options?.[i]) {
-            mm.options[i].votes = Array.isArray(mm.options[i].votes) ? mm.options[i].votes : [];
-            if (mm.options[i].votes.includes(currentUser)) {
-              mm.options[i].votes = mm.options[i].votes.filter((u) => u !== currentUser);
-            } else {
-              mm.options[i].votes.push(currentUser);
-            }
-            renderMicroModules();
-            await syncStateToUrl(`${currentUser} voted in "${mm.title}"`);
-          }
-        });
+      card.querySelector('.edit-mm-script-btn')?.addEventListener('click', () => {
+        openMicroModuleStudio(mm);
       });
 
       card.querySelector('.del-mm-btn')?.addEventListener('click', async () => {
@@ -2108,6 +3317,90 @@
 
       box.appendChild(card);
     });
+  }
+
+  function openMicroModuleStudio(existingMm = null) {
+    const editIdEl = document.getElementById('mm-edit-id');
+    const typeEl = document.getElementById('mm-type');
+    const iconEl = document.getElementById('mm-icon');
+    const titleEl = document.getElementById('mm-title');
+    const linesWrap = document.getElementById('mm-lines-wrap');
+    const targetWrap = document.getElementById('mm-target-wrap');
+    const targetTimeEl = document.getElementById('mm-target-time');
+    const codeEl = document.getElementById('mm-script-code');
+    const dataEl = document.getElementById('mm-script-data');
+    const detailsEl = document.getElementById('mm-script-details');
+    const headingEl = document.getElementById('mm-sheet-heading');
+
+    if (existingMm) {
+      ensureMicroModuleScript(existingMm);
+      headingEl.textContent = `</> Edit "${existingMm.title}" Script`;
+      editIdEl.value = existingMm.id;
+      typeEl.value = existingMm.type || 'script';
+      iconEl.value = existingMm.icon || '🧩';
+      titleEl.value = existingMm.title || '';
+      linesWrap.classList.add('hidden');
+      targetWrap.classList.toggle('hidden', existingMm.type !== 'countdown');
+      if (existingMm.data?.target) targetTimeEl.value = existingMm.data.target;
+      codeEl.value = existingMm.code || '';
+      dataEl.value = JSON.stringify(existingMm.data || {}, null, 2);
+      if (detailsEl) detailsEl.open = true;
+    } else {
+      headingEl.textContent = '🧩 URL Micro-Module & DB-Script Studio';
+      editIdEl.value = '';
+      typeEl.value = 'countdown';
+      iconEl.value = '⏳';
+      titleEl.value = '';
+      document.getElementById('mm-lines').value = '';
+      const defTarget = '2026-12-25T11:11';
+      targetTimeEl.value = defTarget;
+      linesWrap.classList.add('hidden');
+      targetWrap.classList.remove('hidden');
+      const synth = synthesizeScriptForPreset('countdown', { target: defTarget });
+      codeEl.value = synth.code;
+      dataEl.value = JSON.stringify(synth.data, null, 2);
+      if (detailsEl) detailsEl.open = false;
+    }
+    closeAllSheets();
+    openSheet('sheet-micromodule');
+  }
+
+  function openPinSheet(defaultKind = 'parking') {
+    const kindInput = document.getElementById('pin-kind-input');
+    const parkBtn = document.getElementById('pin-kind-parking-btn');
+    const meetBtn = document.getElementById('pin-kind-meetup-btn');
+    const titleInp = document.getElementById('pin-title-input');
+    const noteInp = document.getElementById('pin-note-input');
+    const readout = document.getElementById('pin-coords-readout');
+
+    const setKind = (k) => {
+      kindInput.value = k;
+      parkBtn.className = k === 'parking' ? 'btn btn-lime' : 'btn';
+      meetBtn.className = k === 'meetup' ? 'btn btn-lime' : 'btn';
+      titleInp.placeholder = k === 'meetup'
+        ? 'e.g. Main Stage Clocktower, Hotel Lobby...'
+        : 'e.g. Level 3 Blue Giraffe, Spot 42...';
+    };
+    setKind(defaultKind);
+
+    titleInp.value = '';
+    noteInp.value = '';
+    document.getElementById('pin-search-input').value = '';
+    document.getElementById('pin-search-results').classList.add('hidden');
+
+    if (appState?.location?.lat != null) {
+      pendingPinCoords = {
+        lat: appState.location.lat,
+        lon: appState.location.lon,
+        label: appState.location.whereAreWe || `${appState.location.lat.toFixed(4)}, ${appState.location.lon.toFixed(4)}`,
+      };
+      readout.textContent = `📍 ${pendingPinCoords.label}`;
+    } else {
+      pendingPinCoords = { lat: 41.40897, lon: -75.66241, label: 'Scranton, PA (Tap Use My Exact GPS)' };
+      readout.textContent = pendingPinCoords.label;
+    }
+
+    openSheet('sheet-pin');
   }
 
   function renderModulesSettingsSheet() {
@@ -2387,62 +3680,115 @@
       btn.addEventListener('click', copyAiRecipePrompt);
     });
 
-    // Micro-Module Creator
+    // Micro-Module Studio & DB-Script Editor
     document.getElementById('open-micromodule-creator-btn')?.addEventListener('click', () => {
-      closeAllSheets();
-      openSheet('sheet-micromodule');
+      openMicroModuleStudio(null);
     });
+
+    const syncStudioScriptPreview = () => {
+      const editId = document.getElementById('mm-edit-id').value;
+      if (editId) return; // Don't overwrite custom edits when editing an existing module unless template changed
+      const t = document.getElementById('mm-type').value;
+      if (t === 'script') return;
+      const rawLines = document.getElementById('mm-lines').value.split('\n').map((s) => s.trim()).filter(Boolean);
+      const targetTime = document.getElementById('mm-target-time').value || '2026-12-25T11:11';
+      const dataSeed = {};
+      if (t === 'countdown') dataSeed.target = targetTime;
+      if (t === 'checklist' && rawLines.length) dataSeed.items = rawLines.map((text) => ({ text, done: false }));
+      if (t === 'kv' && rawLines.length) {
+        dataSeed.pairs = rawLines.map((line) => {
+          const idx = line.indexOf(':');
+          return idx !== -1 ? { k: line.slice(0, idx).trim(), v: line.slice(idx + 1).trim() } : { k: line, v: '' };
+        });
+      }
+      if (t === 'poll' && rawLines.length) dataSeed.options = rawLines.map((label) => ({ label, votes: [] }));
+      const synth = synthesizeScriptForPreset(t, dataSeed);
+      document.getElementById('mm-script-code').value = synth.code;
+      document.getElementById('mm-script-data').value = JSON.stringify(synth.data, null, 2);
+    };
+
     document.getElementById('mm-type')?.addEventListener('change', (e) => {
       const t = e.target.value;
+      document.getElementById('mm-edit-id').value = '';
       const lbl = document.getElementById('mm-lines-label');
       const linesWrap = document.getElementById('mm-lines-wrap');
       const targetWrap = document.getElementById('mm-target-wrap');
       const ta = document.getElementById('mm-lines');
-      linesWrap.classList.toggle('hidden', t === 'countdown');
+      const iconInp = document.getElementById('mm-icon');
+      const detailsEl = document.getElementById('mm-script-details');
+
+      const icons = { countdown: '⏳', kv: '🔑', checklist: '📦', poll: '🍕', pins: '🅿️', rounds: '🍻', turing: '🧮', script: '🧩' };
+      if (iconInp) iconInp.value = icons[t] || '🧩';
+
+      const usesLines = t === 'checklist' || t === 'kv' || t === 'poll';
+      linesWrap.classList.toggle('hidden', !usesLines);
       targetWrap.classList.toggle('hidden', t !== 'countdown');
+      if (detailsEl && (t === 'script' || t === 'turing')) detailsEl.open = true;
+
       if (t === 'kv') {
         lbl.textContent = 'Key : Value pairs (one per line)';
         ta.placeholder = 'Gate Code : #1725\nWi-Fi : DunderNet\nRoom : Suite 304';
       } else if (t === 'poll') {
         lbl.textContent = 'Poll Options (one per line)';
         ta.placeholder = "Alfredo's Pizza Cafe\nPoor Richard's Pub\nChili's";
-      } else {
+      } else if (t === 'checklist') {
         lbl.textContent = 'Checklist Items (one per line)';
         ta.placeholder = 'Cooler & Ice\nDundie Trophies\nAux Cord';
       }
+      syncStudioScriptPreview();
     });
+
+    document.getElementById('mm-lines')?.addEventListener('input', syncStudioScriptPreview);
+    document.getElementById('mm-target-time')?.addEventListener('input', syncStudioScriptPreview);
+
     document.getElementById('micromodule-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!appState) return;
+      const editId = document.getElementById('mm-edit-id').value;
       const type = document.getElementById('mm-type').value;
+      const icon = document.getElementById('mm-icon').value.trim() || '🧩';
       const title = document.getElementById('mm-title').value.trim();
-      const rawLines = document.getElementById('mm-lines').value.split('\n').map((s) => s.trim()).filter(Boolean);
       const targetTime = document.getElementById('mm-target-time').value;
+      const code = document.getElementById('mm-script-code').value.trim();
+      let parsedData = {};
+      try {
+        parsedData = JSON.parse(document.getElementById('mm-script-data').value || '{}');
+      } catch {
+        showToast('Invalid JSON in State Data');
+        return;
+      }
       if (!title) return;
 
-      const mm = {
-        id: 'mm_' + Date.now(),
-        type,
-        title,
-        icon: type === 'checklist' ? '📦' : type === 'poll' ? '🍕' : type === 'countdown' ? '⏳' : '🔑',
-        items: type === 'checklist' ? rawLines.map((text) => ({ text, done: false })) : [],
-        pairs: type === 'kv'
-          ? rawLines.map((line) => {
-              const idx = line.indexOf(':');
-              return idx !== -1 ? { k: line.slice(0, idx).trim(), v: line.slice(idx + 1).trim() } : { k: line, v: '' };
-            })
-          : [],
-        options: type === 'poll' ? rawLines.map((label) => ({ label, votes: [] })) : [],
-        targetTime: type === 'countdown' ? targetTime : null,
-      };
+      if (type === 'countdown' && targetTime) {
+        parsedData.target = targetTime;
+      }
 
       appState.microModules = appState.microModules || [];
-      appState.microModules.push(mm);
-      document.getElementById('mm-title').value = '';
-      document.getElementById('mm-lines').value = '';
+      if (editId) {
+        appState.microModules = appState.microModules.map((m) =>
+          m.id === editId
+            ? { ...m, type, icon, title, code, data: parsedData, targetTime: type === 'countdown' ? targetTime : m.targetTime }
+            : m
+        );
+      } else {
+        const mm = {
+          id: 'mm_' + Date.now(),
+          type,
+          title,
+          icon,
+          code,
+          data: parsedData,
+          items: Array.isArray(parsedData.items) ? parsedData.items : [],
+          pairs: Array.isArray(parsedData.pairs) ? parsedData.pairs : [],
+          options: Array.isArray(parsedData.options) ? parsedData.options : [],
+          targetTime: type === 'countdown' ? targetTime : null,
+        };
+        appState.microModules.push(mm);
+      }
+
       closeAllSheets();
       renderMicroModules();
-      await syncStateToUrl(`Added micro-module "${title}"`);
+      await syncStateToUrl(`${editId ? 'Updated' : 'Added'} micro-module "${title}"`);
     });
 
     const goLanding = () => {
@@ -2595,7 +3941,7 @@
       }
     });
 
-    // Quick Action Buttons
+    // Quick Action Buttons & Drop Pin Sheet
     document.getElementById('qa-stop-btn')?.addEventListener('click', () => { renderStops(); openSheet('sheet-stop'); });
     document.getElementById('stops-search-open-btn')?.addEventListener('click', () => { renderStops(); openSheet('sheet-stop'); });
     document.getElementById('qa-cost-btn')?.addEventListener('click', () => openExpenseModal('expense', null));
@@ -2604,6 +3950,92 @@
     document.getElementById('qa-msg-btn')?.addEventListener('click', () => openSheet('sheet-msg'));
     document.getElementById('open-note-sheet-btn')?.addEventListener('click', () => openSheet('sheet-msg'));
     document.getElementById('open-dest-sheet-btn')?.addEventListener('click', () => { renderStops(); openSheet('sheet-stop'); });
+
+    document.getElementById('qa-pin-btn')?.addEventListener('click', () => openPinSheet('parking'));
+    document.getElementById('home-drop-pin-btn')?.addEventListener('click', () => openPinSheet('parking'));
+    document.getElementById('stops-drop-pin-btn')?.addEventListener('click', () => openPinSheet('parking'));
+
+    document.getElementById('pin-kind-parking-btn')?.addEventListener('click', () => {
+      document.getElementById('pin-kind-input').value = 'parking';
+      document.getElementById('pin-kind-parking-btn').className = 'btn btn-lime';
+      document.getElementById('pin-kind-meetup-btn').className = 'btn';
+      document.getElementById('pin-title-input').placeholder = 'e.g. Level 3 Blue Giraffe, Spot 42...';
+    });
+    document.getElementById('pin-kind-meetup-btn')?.addEventListener('click', () => {
+      document.getElementById('pin-kind-input').value = 'meetup';
+      document.getElementById('pin-kind-meetup-btn').className = 'btn btn-lime';
+      document.getElementById('pin-kind-parking-btn').className = 'btn';
+      document.getElementById('pin-title-input').placeholder = 'e.g. Main Stage Clocktower, Hotel Lobby...';
+    });
+
+    document.getElementById('pin-snap-gps-btn')?.addEventListener('click', () => {
+      if (!('geolocation' in navigator)) {
+        showToast('Geolocation not supported in this browser');
+        return;
+      }
+      const btn = document.getElementById('pin-snap-gps-btn');
+      btn.textContent = 'Locating...';
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(5));
+          const lon = Number(pos.coords.longitude.toFixed(5));
+          let label = `${lat}, ${lon}`;
+          try {
+            const b = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`).then((r) => r.json());
+            if (b.locality || b.city) label = `${b.locality || b.city} (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+          } catch {}
+          pendingPinCoords = { lat, lon, label };
+          document.getElementById('pin-coords-readout').textContent = `📍 ${label}`;
+          btn.textContent = '📍 Use My Exact GPS';
+          showToast('Locked onto your exact GPS coordinates!');
+        },
+        () => {
+          btn.textContent = '📍 Use My Exact GPS';
+          showToast('Could not read GPS — using trip location');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+    const runPinPlaceSearch = async () => {
+      const q = document.getElementById('pin-search-input').value;
+      const results = await searchPlaces(q, true);
+      renderPlaceSearchResults('pin-search-results', results, 'Use', (place) => {
+        pendingPinCoords = { lat: place.lat, lon: place.lon, label: place.label || place.name };
+        document.getElementById('pin-coords-readout').textContent = `📍 ${pendingPinCoords.label}`;
+        const titleInp = document.getElementById('pin-title-input');
+        if (!titleInp.value.trim()) titleInp.value = place.name;
+      });
+    };
+    document.getElementById('pin-search-btn')?.addEventListener('click', runPinPlaceSearch);
+    document.getElementById('pin-search-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); runPinPlaceSearch(); }
+    });
+
+    document.getElementById('pin-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!appState) return;
+      const kind = document.getElementById('pin-kind-input').value === 'meetup' ? 'meetup' : 'parking';
+      const name = document.getElementById('pin-title-input').value.trim();
+      const note = document.getElementById('pin-note-input').value.trim();
+      if (!name) return;
+      const coords = pendingPinCoords || { lat: appState.location?.lat ?? 41.40897, lon: appState.location?.lon ?? -75.66241 };
+      appState.pins = appState.pins || [];
+      appState.pins.push({
+        id: 'pin_' + Date.now(),
+        kind,
+        name,
+        note,
+        lat: Number(coords.lat),
+        lon: Number(coords.lon),
+        addedBy: currentUser,
+        createdAt: new Date().toISOString(),
+      });
+      closeAllSheets();
+      renderPins();
+      updateMap();
+      await syncStateToUrl(`Dropped ${kind === 'meetup' ? 'meetup' : 'parking'} pin: ${name}`);
+    });
 
     // Expense Form Submit
     document.querySelectorAll('.tx-preset-chip').forEach((c) => {
@@ -2790,7 +4222,10 @@
     bindEvents();
     handleHashRoute();
     setInterval(() => {
-      if (appState && appState.modules?.locations) renderHero();
+      if (appState) {
+        if (appState.modules?.locations) renderHero();
+        renderMicroModules();
+      }
     }, 30000);
   }
 

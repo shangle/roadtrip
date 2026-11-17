@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'roadtrip-shell-v8';
+const CACHE_NAME = 'roadtrip-shell-v9';
 const SHELL_URLS = [
   './',
   './index.html',

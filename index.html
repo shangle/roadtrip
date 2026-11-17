@@ -269,16 +269,17 @@
         </div>
 
         <div class="mod-card">
-          <div class="mod-tag">02 • URL MICRO-MODULES</div>
-          <h3>Send Custom Micro-Modules in the Link</h3>
-          <p>Extend any trip on the fly—either from <strong>⚙ Settings → + Add Micro-Module</strong> or via an AI URL patch. Micro-modules travel inside the URL hash and render right on the Overview screen:</p>
+          <div class="mod-tag">02 • TURING-COMPLETE DB-SCRIPT &amp; URL MICRO-MODULES</div>
+          <h3>Programmable Micro-Modules in the Link</h3>
+          <p>Every micro-module is powered by <strong>DB-Script</strong>—a sandboxed, Turing-complete mini-language (`state`, `let`, `set`, `if/else`, `while`, `for`, `fn`, plus UI primitives `big`, `countdown`, `kv`, `check`, `btn`, `input`, `pin`, `progress`) whose entire structure &amp; state travel inside the URL:</p>
           <ul class="docs-list">
-            <li><strong>📦 Checklist (`checklist`):</strong> Interactive packing &amp; todo lists anyone can check off.</li>
-            <li><strong>🍕 Crew Poll (`poll`):</strong> One-tap voting on dinner spots, activities, or tee times.</li>
-            <li><strong>🔑 Pinned Codes (`kv`):</strong> Key-value cards for Wi-Fi passwords, gate codes &amp; flight numbers.</li>
-            <li><strong>⏳ Countdown (`countdown`):</strong> Live countdown timer to reservations, flights, or check-out.</li>
+            <li><strong>⏳ Countdown &amp; Past Elapsed (`countdown`):</strong> Years, months, days, hours &amp; minutes for both future countdowns and past milestones.</li>
+            <li><strong>🔑 Pinned Codes (`kv`) &amp; 🅿️ GPS Pins (`pin`):</strong> Wi-Fi/door codes with 1-tap copy, plus dropped parking &amp; meetup pins with walking directions.</li>
+            <li><strong>📦 Checklists, 🍕 Polls &amp; 🧮 Custom Scripts:</strong> Tap <code>&lt;/&gt; Script</code> on any micro-module to view or edit its live DB-Script code!</li>
           </ul>
-          <pre class="code-snippet">&amp;ai={"addMicroModules":[{"type":"kv","title":"Hotel Info","icon":"🔑","pairs":[{"k":"Gate Code","v":"#1725"}]}]}</pre>
+          <pre class="code-snippet">state target = "2026-12-25T11:11"
+let t = timeDiff(state.target)
+big t.text sub=t.formattedDate badge=t.badge</pre>
         </div>
 
         <div class="mod-card">
@@ -469,7 +470,7 @@
   <div id="unlock-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="wizard-card" style="max-width:430px; text-align:center;">
       <div class="unlock-lock-orb">🔒</div>
-      <div class="dest-eyebrow" style="color:var(--lime);">AES-256-GCM ENCRYPTED TRIP</div>
+      <div class="dest-eyebrow" style="color:var(--accent-ink);">AES-256-GCM ENCRYPTED TRIP</div>
       <h2 class="wizard-title" style="margin-top:6px;">Enter Trip Passcode</h2>
       <p class="muted">This Dangerous.Business link is encrypted. Enter the crew password to decrypt it in your browser.</p>
 
@@ -490,7 +491,7 @@
       <div class="merge-warn-badge">⚠️ DATA PROTECTION CHECK</div>
       <h2 class="wizard-title" id="merge-modal-title" style="margin-top:6px;">Confirm Smart Merge?</h2>
       <p class="muted" style="margin:6px 0 14px;">
-        This device already has a saved copy of <strong id="merge-trip-name" style="color:#fff;">this trip</strong>, and the link you opened contains different updates. Choose how to proceed so no data is accidentally lost:
+        This device already has a saved copy of <strong id="merge-trip-name" style="color:var(--text);">this trip</strong>, and the link you opened contains different updates. Choose how to proceed so no data is accidentally lost:
       </p>
 
       <div id="merge-diff-summary" class="merge-diff-box"></div>
@@ -689,6 +690,16 @@
             </div>
             <div class="qa-label">Post<br>Note</div>
           </button>
+
+          <button class="qa-btn sky" id="qa-pin-btn" type="button">
+            <div class="qa-circle" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11z"/>
+                <circle cx="12" cy="10" r="2.6"/>
+              </svg>
+            </div>
+            <div class="qa-label">Drop<br>Pin</div>
+          </button>
         </section>
 
         <!-- Add to Home Screen Prompt Card -->
@@ -748,6 +759,15 @@
           <div id="home-latest-msgs"></div>
         </section>
 
+        <!-- Dropped Parking & Meetup Pins Card -->
+        <section id="home-pins-card" class="card">
+          <div class="card-head">
+            <div class="card-title">🅿️ Parking &amp; 🤝 Meetup Pins</div>
+            <button class="btn btn-sm btn-lime" id="home-drop-pin-btn" type="button">+ Drop Pin</button>
+          </div>
+          <div id="home-pins-list"></div>
+        </section>
+
         <!-- Dynamic URL Micro-Modules Container -->
         <div id="home-micromodules-box"></div>
 
@@ -786,6 +806,14 @@
 
         <section class="card">
           <div class="card-head">
+            <div class="card-title">🅿️ Parking &amp; 🤝 Meetup Pins</div>
+            <button class="btn btn-sm btn-lime" id="stops-drop-pin-btn" type="button">+ Drop Pin</button>
+          </div>
+          <div id="stops-pins-list"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
             <div class="card-title">Route Map</div>
             <div style="display:flex; gap:6px;">
               <button id="stops-gps-btn" class="btn btn-sm btn-lime" type="button">📍 Stamp My GPS</button>
@@ -807,7 +835,7 @@
             <div>
               <div class="dest-eyebrow">TOTAL TRIP SPENT</div>
               <div class="hero-time" id="split-total-display" style="margin-top:4px;">$0.00</div>
-              <div style="color:var(--lime); font-weight:800; font-size:0.95rem; margin-top:4px;">
+              <div style="color:var(--accent-ink); font-weight:800; font-size:0.95rem; margin-top:4px;">
                 <span id="split-per-person-display">$0.00</span> per person
               </div>
             </div>
@@ -1111,37 +1139,123 @@
     </div>
   </div>
 
-  <!-- CREATE MICRO-MODULE SHEET -->
+  <!-- CREATE / EDIT MICRO-MODULE & DB-SCRIPT STUDIO SHEET -->
   <div id="sheet-micromodule" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="card-head">
-        <div class="card-title">🧩 Add URL Micro-Module</div>
+        <div class="card-title" id="mm-sheet-heading">🧩 URL Micro-Module &amp; DB-Script Studio</div>
         <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
       </div>
       <form id="micromodule-form">
-        <label class="field-label" for="mm-type">Micro-Module Type</label>
+        <input type="hidden" id="mm-edit-id" value="">
+
+        <label class="field-label" for="mm-type">Preset Template or Custom Script</label>
         <select id="mm-type" class="input" style="margin-bottom:12px;">
-          <option value="checklist">📦 Shared Checklist (Packing / Todo items)</option>
+          <option value="countdown">⏳ Event Countdown / Past Elapsed (Years, Months, Days, Hours)</option>
           <option value="kv">🔑 Pinned Codes &amp; Info (Wi-Fi, Gate Codes, Room #)</option>
+          <option value="checklist">📦 Shared Checklist (Packing / Todo items)</option>
           <option value="poll">🍕 Quick Crew Poll (Vote on options)</option>
-          <option value="countdown">⏳ Event Countdown (Reservation / Tee Time / Flight)</option>
+          <option value="pins">🅿️ Parking &amp; Meetup Pin Widget (GPS + Walk Directions)</option>
+          <option value="rounds">🍻 Round / Drink / Coffee Tracker (Who's buying next?)</option>
+          <option value="turing">🧮 Turing-Complete VM Demo (Collatz 3n+1 Loop in URL)</option>
+          <option value="script">&lt;/&gt; Custom DB-Script (Write structure &amp; logic from scratch)</option>
         </select>
 
-        <label class="field-label" for="mm-title">Title</label>
-        <input id="mm-title" class="input" style="margin-bottom:12px;" type="text" placeholder="e.g. Airbnb &amp; Wi-Fi Codes, Packing List..." required>
+        <div class="input-row" style="margin-bottom:12px;">
+          <div style="width:74px;">
+            <label class="field-label" for="mm-icon">Icon</label>
+            <input id="mm-icon" class="input" style="text-align:center;" type="text" value="⏳" maxlength="4">
+          </div>
+          <div style="flex:1;">
+            <label class="field-label" for="mm-title">Widget Title</label>
+            <input id="mm-title" class="input" type="text" placeholder="e.g. Christmas, Birthday, Airbnb Codes..." required>
+          </div>
+        </div>
 
-        <div id="mm-lines-wrap">
+        <div id="mm-lines-wrap" class="hidden" style="margin-bottom:12px;">
           <label class="field-label" for="mm-lines" id="mm-lines-label">Items (one per line)</label>
-          <textarea id="mm-lines" class="input" rows="4" placeholder="Cooler &amp; Ice&#10;Dundie Trophies&#10;Bluetooth Speaker"></textarea>
+          <textarea id="mm-lines" class="input" rows="3" placeholder="Cooler &amp; Ice&#10;Dundie Trophies&#10;Bluetooth Speaker"></textarea>
         </div>
 
-        <div id="mm-target-wrap" class="hidden" style="margin-top:10px;">
-          <label class="field-label" for="mm-target-time">Target Date &amp; Time</label>
+        <div id="mm-target-wrap" style="margin-bottom:12px;">
+          <label class="field-label" for="mm-target-time">Target Date &amp; Time (Past or Future)</label>
           <input id="mm-target-time" class="input" type="datetime-local">
+          <div class="muted" style="font-size:0.75rem; margin-top:4px;">
+            Future dates show a live countdown (years, months, days, hours, mins). Past dates show elapsed time since the event!
+          </div>
         </div>
 
-        <button class="btn btn-lime btn-full btn-lg" style="margin-top:14px;" type="submit">Add Micro-Module to URL</button>
+        <details id="mm-script-details" class="diff-details" style="margin-top:10px;">
+          <summary>
+            <span>&lt;/&gt; Universal DB-Script Structure &amp; State (Turing-Complete)</span>
+            <span class="diff-summary-right">Edit Code ▾</span>
+          </summary>
+          <div class="diff-items-list">
+            <div class="muted" style="font-size:0.76rem;">
+              Every micro-module's UI structure and logic is defined in <strong>DB-Script</strong> and stored right inside the URL. Modify the script or initial state JSON below:
+            </div>
+            <label class="field-label" for="mm-script-code" style="margin-top:6px;">DB-Script Program (<code>mm.code</code>)</label>
+            <textarea id="mm-script-code" class="script-editor-area" rows="7" spellcheck="false"></textarea>
+
+            <label class="field-label" for="mm-script-data" style="margin-top:8px;">State JSON (<code>mm.data</code>)</label>
+            <textarea id="mm-script-data" class="script-editor-area" rows="3" spellcheck="false"></textarea>
+
+            <div class="muted" style="font-size:0.74rem; line-height:1.45; margin-top:4px;">
+              <strong>Syntax Quick Reference:</strong><br>
+              • <code>state key = expr</code> (init URL state) • <code>let x = expr</code> • <code>set state.k = expr</code><br>
+              • <code>if cond ... elif cond ... else ... end</code> • <code>while cond ... end</code> • <code>for item, i in arr ... end</code><br>
+              • <code>fn name(a, b) ... return expr ... end</code> (supports recursion, 25k step gas limit)<br>
+              • <strong>UI Nodes:</strong> <code>big expr sub=expr badge=expr</code> • <code>countdown expr</code> • <code>kv k, v copy=true</code> • <code>check label, bool -&gt; stmt</code> • <code>btn label right=expr active=bool -&gt; stmt</code> • <code>input stateKey, placeholder btn=label -&gt; stmt</code> • <code>pin label, lat, lon note=expr</code> • <code>progress pct</code> • <code>row ... end</code>
+            </div>
+          </div>
+        </details>
+
+        <button class="btn btn-lime btn-full btn-lg" style="margin-top:14px;" type="submit" id="mm-submit-btn">Save Micro-Module to URL</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DROP PARKING OR MEETUP PIN SHEET -->
+  <div id="sheet-pin" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-head">
+        <div class="card-title">📍 Drop Parking or Meetup Pin</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
+      </div>
+      <form id="pin-form">
+        <label class="field-label">What kind of pin?</label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+          <button type="button" class="btn btn-lime" id="pin-kind-parking-btn" data-kind="parking">🅿️ Parking Spot</button>
+          <button type="button" class="btn" id="pin-kind-meetup-btn" data-kind="meetup">🤝 Meeting Place</button>
+        </div>
+        <input type="hidden" id="pin-kind-input" value="parking">
+
+        <label class="field-label" for="pin-title-input" id="pin-title-label">Spot / Location Name</label>
+        <input id="pin-title-input" class="input" style="margin-bottom:10px;" type="text" placeholder="e.g. Level 3 Blue Giraffe, Spot 42 (or Main Gate)" required>
+
+        <label class="field-label" for="pin-note-input">Floor, Row, Gate Code, or Meetup Time Note <span class="muted">(optional)</span></label>
+        <input id="pin-note-input" class="input" style="margin-bottom:12px;" type="text" placeholder="e.g. Take north elevator • Meet here at 5:30 PM">
+
+        <div class="where-box" style="margin-top:0; margin-bottom:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <div>
+              <div class="where-label">PIN COORDINATES</div>
+              <div id="pin-coords-readout" style="font-weight:800; font-size:0.95rem;">Using current trip GPS</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-lime" id="pin-snap-gps-btn">📍 Use My Exact GPS</button>
+          </div>
+          <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
+            <div class="input-row">
+              <input id="pin-search-input" class="input" type="text" placeholder="Or search a landmark / street...">
+              <button type="button" class="btn btn-sm" id="pin-search-btn">Find</button>
+            </div>
+            <div id="pin-search-results" class="search-results hidden"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-lime btn-full btn-xl" type="submit">📍 Save Pin to Trip URL</button>
       </form>
     </div>
   </div>
