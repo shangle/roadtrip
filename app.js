@@ -4,12 +4,16 @@
   const DEFAULT_PLAYLIST_URL = 'https://music.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI';
   const DONUT_COLORS = ['#C8FF3D', '#9D7BFF', '#56CCF2', '#FB7185', '#FBBF24', '#34D399'];
   const LAST_TRIP_STORAGE_KEY = 'db_last_trip_state_v4';
+  const BACKUPS_LIST_KEY = 'db_backups_list_v1';
   const A2HS_DISMISS_KEY = 'roadtrip_a2hs_dismissed_v1';
 
   let appState = null;
   let activePassword = null;
   let pendingEncryptedPayload = null;
+  let pendingAiPatchObj = null;
   let pendingMergeContext = null;
+  let pendingRestoreEntry = null;
+  let currentTheme = localStorage.getItem('db_theme') || 'dark';
   let currentUser = localStorage.getItem('roadtrip_who_v4') || 'Michael';
   let welcomeSelectedUser = null;
   let dirtyCount = 0;
@@ -255,6 +259,31 @@
           whereAreWe: 'On I-81 N • Near Scranton, PA',
         },
       ],
+      theme: currentTheme || 'dark',
+      microModules: [
+        {
+          id: 'mm_dm_codes',
+          type: 'kv',
+          title: 'Scranton Business Park & Wi-Fi',
+          icon: '🔑',
+          pairs: [
+            { k: 'Gate Code', v: '#1725' },
+            { k: 'Office Wi-Fi', v: 'DunderMifflin_5G (Pass: BearsBeets)' },
+            { k: 'Conference Room', v: 'Reserved at 5:30 PM' },
+          ],
+        },
+        {
+          id: 'mm_dm_pack',
+          type: 'checklist',
+          title: 'Party Planning Committee Checklist',
+          icon: '📦',
+          items: [
+            { text: 'Dundie Trophies (Engraved)', done: true },
+            { text: "Order from Alfredo's Pizza Cafe", done: true },
+            { text: 'Brown & Grey Balloons (IT IS YOUR PARTY.)', done: false },
+          ],
+        },
+      ],
     };
   }
 
@@ -264,6 +293,7 @@
       id: raw?.id || 'trip_' + Date.now().toString(36),
       updatedAt: raw?.updatedAt || Date.now(),
       title: raw?.title || 'Party at Dunder Mifflin',
+      theme: raw?.theme || currentTheme || 'dark',
       crew: Array.isArray(raw?.crew) && raw.crew.length ? raw.crew : ['Michael', 'Dwight', 'Jim', 'Pam'],
       modules: {
         locations: raw?.modules?.locations !== false,
@@ -302,6 +332,8 @@
         collabUrl: raw?.music?.collabUrl || DEFAULT_PLAYLIST_URL,
       },
       messages: Array.isArray(raw?.messages) ? raw.messages : [],
+      microModules: Array.isArray(raw?.microModules) ? raw.microModules : [],
+      deletedMicroIds: Array.isArray(raw?.deletedMicroIds) ? raw.deletedMicroIds : [],
     };
     return base;
   }
@@ -341,6 +373,14 @@
     }
     const mergedMsgs = [...msgMap.values()].sort((x, y) => Date.parse(x.createdAt || 0) - Date.parse(y.createdAt || 0));
 
+    // Merge microModules
+    const delMm = new Set([...(a.deletedMicroIds || []), ...(b.deletedMicroIds || [])]);
+    const mmMap = new Map();
+    for (const mm of [...(a.microModules || []), ...(b.microModules || [])]) {
+      if (!mm || !mm.id || delMm.has(mm.id)) continue;
+      mmMap.set(mm.id, mm);
+    }
+
     // Pick fresher GPS location
     const aLocTime = a.location?.updatedAt ? Date.parse(a.location.updatedAt) : 0;
     const bLocTime = b.location?.updatedAt ? Date.parse(b.location.updatedAt) : 0;
@@ -361,6 +401,8 @@
         deletedIds: [...delTx],
       },
       messages: mergedMsgs.slice(-50),
+      microModules: [...mmMap.values()],
+      deletedMicroIds: [...delMm],
     };
   }
 
@@ -425,15 +467,91 @@
   // =========================================================
   // VIEW ROUTING (LANDING vs UNLOCK vs APP)
   // =========================================================
+  function applyTheme(themeName) {
+    const valid = ['dark', 'light', 'unicorn', 'win98', 'brutalist'];
+    currentTheme = valid.includes(themeName) ? themeName : 'dark';
+    try { localStorage.setItem('db_theme', currentTheme); } catch {}
+    if (currentTheme === 'dark') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', currentTheme);
+    }
+    document.querySelectorAll('#theme-picker-grid .theme-chip').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+    });
+  }
+
+  function loadBackupsList() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(BACKUPS_LIST_KEY) || '[]');
+      return Array.isArray(raw) ? raw : [];
+    } catch { return []; }
+  }
+
+  function summarizeStateShort(st) {
+    const s = normalizeState(st);
+    const expC = s.expenses.transactions.length;
+    const expSum = sumExpenses(s).toFixed(0);
+    const stopC = s.trip.stops.length;
+    const noteC = s.messages.length;
+    return `${expC} expense${expC === 1 ? '' : 's'} ($${expSum}) · ${stopC} stop${stopC === 1 ? '' : 's'} · ${noteC} note${noteC === 1 ? '' : 's'}`;
+  }
+
+  function saveBackupSnapshot(stateToBackup, reason = 'Auto Backup') {
+    if (!stateToBackup) return;
+    try {
+      const s = normalizeState(stateToBackup);
+      const list = loadBackupsList();
+      const entry = {
+        id: 'bk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        tripId: s.id,
+        tripTitle: s.title || 'Trip',
+        createdAt: new Date().toISOString(),
+        reason,
+        summary: summarizeStateShort(s),
+        state: s,
+      };
+      list.unshift(entry);
+      localStorage.setItem(BACKUPS_LIST_KEY, JSON.stringify(list.slice(0, 12)));
+      localStorage.setItem(`db_backup_${s.id}`, JSON.stringify(s));
+    } catch {}
+  }
+
+  function openRestoreBackupConfirmation(entry) {
+    if (!entry || !entry.state) return;
+    pendingRestoreEntry = entry;
+    const box = document.getElementById('restore-confirm-details');
+    const when = entry.createdAt ? new Date(entry.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Earlier';
+    const currSummary = appState ? summarizeStateShort(appState) : 'None';
+    box.innerHTML = `
+      <div class="merge-diff-row">
+        <span class="muted">Backup Selected</span>
+        <strong>${esc(entry.tripTitle)} (${esc(entry.reason)})</strong>
+      </div>
+      <div class="merge-diff-row">
+        <span class="muted">Saved At</span>
+        <span>${esc(when)}</span>
+      </div>
+      <div class="merge-diff-row">
+        <span class="muted">Backup Contents</span>
+        <strong style="color:var(--lime);">${esc(entry.summary)}</strong>
+      </div>
+      <div class="merge-diff-row">
+        <span class="muted">Current Active State</span>
+        <span>${esc(currSummary)}</span>
+      </div>`;
+    document.getElementById('restore-confirm-modal').classList.remove('hidden');
+  }
+
   function showLandingView() {
     closeAllSheets();
     document.getElementById('wizard-modal').classList.add('hidden');
     document.getElementById('unlock-modal').classList.add('hidden');
     document.getElementById('merge-modal')?.classList.add('hidden');
+    document.getElementById('restore-confirm-modal')?.classList.add('hidden');
     document.getElementById('app-view').classList.add('hidden');
     document.getElementById('landing-view').classList.remove('hidden');
 
-    // Check if there is a saved trip on this device
     try {
       const saved = JSON.parse(localStorage.getItem(LAST_TRIP_STORAGE_KEY) || 'null');
       const banner = document.getElementById('resume-trip-banner');
@@ -460,6 +578,7 @@
       },
       music: s.music,
       messages: (s.messages || []).map((m) => ({ id: m.id, text: m.text, author: m.author })),
+      microModules: s.microModules || [],
     });
   }
 
@@ -477,36 +596,159 @@
 
     document.getElementById('merge-trip-name').textContent = merged.title || 'this trip';
 
-    const locExpCount = local.expenses.transactions.length;
-    const incExpCount = incoming.expenses.transactions.length;
-    const mrgExpCount = merged.expenses.transactions.length;
+    // 1. Detailed Expense Diff
+    const locTxMap = new Map(local.expenses.transactions.map((t) => [String(t.id), t]));
+    const incTxMap = new Map(incoming.expenses.transactions.map((t) => [String(t.id), t]));
+    const allTxIds = new Set([...locTxMap.keys(), ...incTxMap.keys()]);
+    let expOnlyLocal = 0;
+    let expOnlyInc = 0;
+    let expModified = 0;
+    const expRowsHtml = [];
 
-    const locStopCount = local.trip.stops.length;
-    const incStopCount = incoming.trip.stops.length;
-    const mrgStopCount = merged.trip.stops.length;
+    allTxIds.forEach((id) => {
+      const l = locTxMap.get(id);
+      const r = incTxMap.get(id);
+      const item = r || l;
+      const amtStr = `$${Number(item.amount || 0).toFixed(2)}`;
+      const whoStr = item.type === 'payment' ? `${item.payer} → ${item.payee}` : `Paid by ${item.payer}`;
+      if (l && !r) {
+        expOnlyLocal++;
+        expRowsHtml.push(`<div class="diff-item"><div><strong>${esc(l.description)}</strong><div class="muted">${esc(whoStr)} · ${amtStr}</div></div><span class="diff-tag local">Only on Your Device</span></div>`);
+      } else if (!l && r) {
+        expOnlyInc++;
+        expRowsHtml.push(`<div class="diff-item"><div><strong>${esc(r.description)}</strong><div class="muted">${esc(whoStr)} · ${amtStr}</div></div><span class="diff-tag incoming">+ New in Link</span></div>`);
+      } else if (l.amount !== r.amount || l.description !== r.description || l.payer !== r.payer) {
+        expModified++;
+        expRowsHtml.push(`<div class="diff-item"><div><strong>${esc(r.description)}</strong><div class="muted">Device: $${Number(l.amount).toFixed(2)} → Link: $${Number(r.amount).toFixed(2)}</div></div><span class="diff-tag modified">Modified</span></div>`);
+      } else {
+        expRowsHtml.push(`<div class="diff-item"><div><strong>${esc(l.description)}</strong><div class="muted">${esc(whoStr)} · ${amtStr}</div></div><span class="diff-tag shared">In Both</span></div>`);
+      }
+    });
 
-    const locNoteCount = local.messages.length;
-    const incNoteCount = incoming.messages.length;
-    const mrgNoteCount = merged.messages.length;
+    const expHasDiff = expOnlyLocal > 0 || expOnlyInc > 0 || expModified > 0;
+    const expSummaryParts = [];
+    if (expOnlyInc > 0) expSummaryParts.push(`+${expOnlyInc} new in link`);
+    if (expOnlyLocal > 0) expSummaryParts.push(`+${expOnlyLocal} on device`);
+    if (expModified > 0) expSummaryParts.push(`${expModified} edited`);
+    if (!expSummaryParts.length) expSummaryParts.push(`All ${allTxIds.size} match ($${sumExpenses(merged).toFixed(2)})`);
+    else expSummaryParts.push(`→ $${sumExpenses(merged).toFixed(2)} total`);
+
+    // 2. Detailed Pit Stops & Destination Diff
+    const locStopMap = new Map(local.trip.stops.map((s) => [String(s.id), s]));
+    const incStopMap = new Map(incoming.trip.stops.map((s) => [String(s.id), s]));
+    const allStopIds = new Set([...locStopMap.keys(), ...incStopMap.keys()]);
+    let stopDiffCount = 0;
+    const stopRowsHtml = [];
+
+    const lDest = local.trip.destination?.name || 'None';
+    const rDest = incoming.trip.destination?.name || 'None';
+    if (lDest !== rDest) {
+      stopDiffCount++;
+      stopRowsHtml.push(`<div class="diff-item"><div><strong>🏁 Final Destination</strong><div class="muted">Device: ${esc(lDest)} → Link: ${esc(rDest)}</div></div><span class="diff-tag modified">Changed</span></div>`);
+    } else if (local.trip.destination) {
+      stopRowsHtml.push(`<div class="diff-item"><div><strong>🏁 ${esc(lDest)}</strong><div class="muted">Final Destination</div></div><span class="diff-tag shared">In Both</span></div>`);
+    }
+
+    allStopIds.forEach((id) => {
+      const l = locStopMap.get(id);
+      const r = incStopMap.get(id);
+      if (l && !r) {
+        stopDiffCount++;
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>📍 ${esc(l.name)}</strong><div class="muted">Added by ${esc(l.addedBy || 'Crew')}</div></div><span class="diff-tag local">Only on Your Device</span></div>`);
+      } else if (!l && r) {
+        stopDiffCount++;
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>📍 ${esc(r.name)}</strong><div class="muted">Added by ${esc(r.addedBy || 'Crew')}</div></div><span class="diff-tag incoming">+ New in Link</span></div>`);
+      } else if (Boolean(l.reached) !== Boolean(r.reached)) {
+        stopDiffCount++;
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>📍 ${esc(r.name)}</strong><div class="muted">Status: ${r.reached ? 'Reached' : 'Upcoming'}</div></div><span class="diff-tag modified">Status Updated</span></div>`);
+      } else {
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>📍 ${esc(l.name)}</strong><div class="muted">${l.reached ? 'Completed' : 'Upcoming stop'}</div></div><span class="diff-tag shared">In Both</span></div>`);
+      }
+    });
+
+    // 3. Detailed Crew Notes Diff
+    const locMsgMap = new Map(local.messages.map((m) => [String(m.id), m]));
+    const incMsgMap = new Map(incoming.messages.map((m) => [String(m.id), m]));
+    const allMsgIds = new Set([...locMsgMap.keys(), ...incMsgMap.keys()]);
+    let msgDiffCount = 0;
+    const msgRowsHtml = [];
+
+    allMsgIds.forEach((id) => {
+      const l = locMsgMap.get(id);
+      const r = incMsgMap.get(id);
+      const m = r || l;
+      if (l && !r) {
+        msgDiffCount++;
+        msgRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.author)}:</strong> "${esc(m.text)}"</div><span class="diff-tag local">Only on Device</span></div>`);
+      } else if (!l && r) {
+        msgDiffCount++;
+        msgRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.author)}:</strong> "${esc(m.text)}"</div><span class="diff-tag incoming">+ New in Link</span></div>`);
+      } else {
+        msgRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.author)}:</strong> "${esc(m.text)}"</div><span class="diff-tag shared">In Both</span></div>`);
+      }
+    });
+
+    // 4. Micro-Modules & Crew Diff
+    const locMmMap = new Map((local.microModules || []).map((m) => [String(m.id), m]));
+    const incMmMap = new Map((incoming.microModules || []).map((m) => [String(m.id), m]));
+    const allMmIds = new Set([...locMmMap.keys(), ...incMmMap.keys()]);
+    let mmDiffCount = 0;
+    const mmRowsHtml = [];
+    allMmIds.forEach((id) => {
+      const l = locMmMap.get(id);
+      const r = incMmMap.get(id);
+      const m = r || l;
+      if (l && !r) {
+        mmDiffCount++;
+        mmRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.icon || '🧩')} ${esc(m.title)}</strong></div><span class="diff-tag local">Only on Device</span></div>`);
+      } else if (!l && r) {
+        mmDiffCount++;
+        mmRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.icon || '🧩')} ${esc(m.title)}</strong></div><span class="diff-tag incoming">+ New in Link</span></div>`);
+      } else {
+        mmRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.icon || '🧩')} ${esc(m.title)}</strong></div><span class="diff-tag shared">In Both</span></div>`);
+      }
+    });
 
     const diffBox = document.getElementById('merge-diff-summary');
     diffBox.innerHTML = `
-      <div class="merge-diff-row">
-        <span class="muted">💳 Expenses</span>
-        <span>Device: <strong>${locExpCount} ($${sumExpenses(local).toFixed(0)})</strong> · Link: <strong>${incExpCount} ($${sumExpenses(incoming).toFixed(0)})</strong> → <strong style="color:var(--lime);">Merged: ${mrgExpCount}</strong></span>
-      </div>
-      <div class="merge-diff-row">
-        <span class="muted">📍 Pit Stops</span>
-        <span>Device: <strong>${locStopCount}</strong> · Link: <strong>${incStopCount}</strong> → <strong style="color:var(--lime);">Merged: ${mrgStopCount}</strong></span>
-      </div>
-      <div class="merge-diff-row">
-        <span class="muted">💬 Crew Notes</span>
-        <span>Device: <strong>${locNoteCount}</strong> · Link: <strong>${incNoteCount}</strong> → <strong style="color:var(--lime);">Merged: ${mrgNoteCount}</strong></span>
-      </div>
-      <div class="merge-diff-row">
-        <span class="muted">👥 Crew</span>
-        <span><strong>${esc(merged.crew.join(', '))}</strong></span>
-      </div>`;
+      <details class="diff-details" ${expHasDiff ? 'open' : ''}>
+        <summary>
+          <span>💳 Expenses (${merged.expenses.transactions.length})</span>
+          <span class="diff-summary-right">${esc(expSummaryParts.join(' · '))} ▾</span>
+        </summary>
+        <div class="diff-items-list">
+          ${expRowsHtml.length ? expRowsHtml.join('') : '<div class="muted">No expenses logged yet.</div>'}
+        </div>
+      </details>
+
+      <details class="diff-details" ${stopDiffCount > 0 ? 'open' : ''}>
+        <summary>
+          <span>📍 Route &amp; Stops (${merged.trip.stops.length})</span>
+          <span class="diff-summary-right">${stopDiffCount > 0 ? `${stopDiffCount} change${stopDiffCount > 1 ? 's' : ''}` : 'No changes'} ▾</span>
+        </summary>
+        <div class="diff-items-list">
+          ${stopRowsHtml.length ? stopRowsHtml.join('') : '<div class="muted">No stops added yet.</div>'}
+        </div>
+      </details>
+
+      <details class="diff-details" ${msgDiffCount > 0 ? 'open' : ''}>
+        <summary>
+          <span>💬 Crew Notes (${merged.messages.length})</span>
+          <span class="diff-summary-right">${msgDiffCount > 0 ? `${msgDiffCount} difference${msgDiffCount > 1 ? 's' : ''}` : 'No changes'} ▾</span>
+        </summary>
+        <div class="diff-items-list">
+          ${msgRowsHtml.length ? msgRowsHtml.join('') : '<div class="muted">No notes posted yet.</div>'}
+        </div>
+      </details>
+
+      ${allMmIds.size > 0 ? `
+      <details class="diff-details" ${mmDiffCount > 0 ? 'open' : ''}>
+        <summary>
+          <span>🧩 Micro-Modules (${merged.microModules.length})</span>
+          <span class="diff-summary-right">${mmDiffCount > 0 ? `${mmDiffCount} new/updated` : 'In sync'} ▾</span>
+        </summary>
+        <div class="diff-items-list">${mmRowsHtml.join('')}</div>
+      </details>` : ''}`;
 
     document.getElementById('landing-view').classList.add('hidden');
     document.getElementById('wizard-modal').classList.add('hidden');
@@ -516,6 +758,7 @@
 
   function finalizeEnterApp(chosenState, passwordUsed = null, toastMessage = null) {
     appState = normalizeState(chosenState);
+    if (appState.theme) applyTheme(appState.theme);
     if (passwordUsed) {
       activePassword = passwordUsed;
       appState.encrypted = true;
@@ -536,12 +779,13 @@
     document.getElementById('wizard-modal').classList.add('hidden');
     document.getElementById('unlock-modal').classList.add('hidden');
     document.getElementById('merge-modal')?.classList.add('hidden');
+    document.getElementById('restore-confirm-modal')?.classList.add('hidden');
     document.getElementById('app-view').classList.remove('hidden');
 
     const welcomedForTrip = localStorage.getItem(`db_welcomed_${appState.id}`) === '1';
     const splash = document.getElementById('welcome-splash');
     if (!welcomedForTrip) {
-      welcomeSelectedUser = localStorage.getItem('roadtrip_who');
+      welcomeSelectedUser = localStorage.getItem('roadtrip_who_v4');
       if (!appState.crew.includes(welcomeSelectedUser)) welcomeSelectedUser = null;
       splash.classList.remove('hidden');
     } else {
@@ -567,19 +811,195 @@
     finalizeEnterApp(incomingState, passwordUsed, null);
   }
 
+  // =========================================================
+  // AI AGENT URL PARAMETER (&ai= AND #ai=) ENGINE
+  // =========================================================
+  function deterministicHashNum(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return 1731450000000 + (Math.abs(h) % 900000000);
+  }
+
+  function applyAiPatchToState(baseRaw, aiPatch) {
+    const st = normalizeState(JSON.parse(JSON.stringify(baseRaw || {})));
+    if (!aiPatch || typeof aiPatch !== 'object') return st;
+
+    if (aiPatch.title) st.title = String(aiPatch.title).slice(0, 80);
+    if (aiPatch.theme) st.theme = String(aiPatch.theme);
+
+    if (Array.isArray(aiPatch.crew) && aiPatch.crew.length) {
+      st.crew = [...new Set(aiPatch.crew.map((c) => String(c).trim()).filter(Boolean))];
+    }
+    if (Array.isArray(aiPatch.addCrew)) {
+      aiPatch.addCrew.forEach((c) => {
+        const clean = String(c || '').trim();
+        if (clean && !st.crew.includes(clean)) st.crew.push(clean);
+      });
+    }
+
+    if (aiPatch.setDestination && aiPatch.setDestination.name) {
+      st.trip.destination = {
+        name: String(aiPatch.setDestination.name),
+        label: String(aiPatch.setDestination.label || aiPatch.setDestination.name),
+        lat: Number(aiPatch.setDestination.lat || 41.40897),
+        lon: Number(aiPatch.setDestination.lon || -75.66241),
+      };
+    }
+
+    if (aiPatch.setLocation) {
+      st.location = {
+        ...st.location,
+        whereAreWe: String(aiPatch.setLocation.whereAreWe || st.location.whereAreWe),
+        lat: aiPatch.setLocation.lat != null ? Number(aiPatch.setLocation.lat) : st.location.lat,
+        lon: aiPatch.setLocation.lon != null ? Number(aiPatch.setLocation.lon) : st.location.lon,
+        speedMph: aiPatch.setLocation.speedMph != null ? Number(aiPatch.setLocation.speedMph) : st.location.speedMph,
+        reportedBy: String(aiPatch.setLocation.reportedBy || 'AI Assistant'),
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    if (Array.isArray(aiPatch.addStops)) {
+      aiPatch.addStops.forEach((s) => {
+        if (!s || !s.name) return;
+        const id = s.id || 'stop_ai_' + deterministicHashNum(JSON.stringify(s));
+        if (!st.trip.stops.some((x) => x.id === id)) {
+          st.trip.stops.push({
+            id,
+            name: String(s.name),
+            label: String(s.label || s.name),
+            lat: Number(s.lat || 41.4125),
+            lon: Number(s.lon || -75.6652),
+            addedBy: String(s.addedBy || 'AI Assistant'),
+            reached: Boolean(s.reached),
+          });
+        }
+      });
+    }
+
+    if (Array.isArray(aiPatch.addExpenses)) {
+      aiPatch.addExpenses.forEach((e) => {
+        if (!e || !Number.isFinite(Number(e.amount))) return;
+        const id = e.id || deterministicHashNum(`${e.description}_${e.amount}_${e.payer}_${e.payee || ''}`);
+        if (!st.expenses.transactions.some((x) => x.id === id)) {
+          const payer = String(e.payer || st.crew[0] || 'Michael');
+          if (!st.crew.includes(payer)) st.crew.push(payer);
+          st.expenses.transactions.push({
+            id,
+            type: e.type === 'payment' ? 'payment' : 'expense',
+            description: String(e.description || 'AI Receipt Entry'),
+            amount: Number(e.amount),
+            payer,
+            payee: e.type === 'payment' ? String(e.payee || st.crew[1] || 'Dwight') : undefined,
+            updatedAt: Date.now(),
+          });
+        }
+      });
+    }
+
+    if (Array.isArray(aiPatch.addNotes)) {
+      aiPatch.addNotes.forEach((n) => {
+        const text = typeof n === 'string' ? n : n?.text;
+        if (!text) return;
+        const id = n?.id || 'msg_ai_' + deterministicHashNum(text);
+        if (!st.messages.some((x) => x.id === id)) {
+          st.messages.push({
+            id,
+            author: String(n?.author || 'AI Assistant'),
+            text: String(text),
+            createdAt: new Date().toISOString(),
+            whereAreWe: st.location?.whereAreWe || '',
+          });
+        }
+      });
+    }
+
+    if (Array.isArray(aiPatch.addMicroModules)) {
+      aiPatch.addMicroModules.forEach((mm) => {
+        if (!mm || !mm.title) return;
+        const id = mm.id || 'mm_ai_' + deterministicHashNum(mm.title + (mm.type || ''));
+        if (!st.microModules.some((x) => x.id === id)) {
+          st.microModules.push({
+            id,
+            type: mm.type || 'kv',
+            title: String(mm.title),
+            icon: String(mm.icon || '🧩'),
+            items: Array.isArray(mm.items) ? mm.items : [],
+            pairs: Array.isArray(mm.pairs) ? mm.pairs : [],
+            options: Array.isArray(mm.options) ? mm.options : [],
+            targetTime: mm.targetTime || null,
+          });
+        }
+      });
+    }
+
+    st.updatedAt = Date.now();
+    return st;
+  }
+
+  function parseAiJsonString(rawStr) {
+    if (!rawStr) return null;
+    try {
+      return JSON.parse(decodeURIComponent(rawStr));
+    } catch {
+      try {
+        return JSON.parse(rawStr);
+      } catch {
+        try {
+          const bytes = base64UrlToBytes(rawStr);
+          return JSON.parse(new TextDecoder().decode(bytes));
+        } catch { return null; }
+      }
+    }
+  }
+
   async function handleHashRoute() {
     if (suppressHashEvent) return;
     const rawHash = window.location.hash.replace(/^#/, '').trim();
-    if (!rawHash || (!rawHash.startsWith('s=') && !rawHash.startsWith('e='))) {
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const queryAi = urlSearchParams.get('ai');
+
+    if (!rawHash && !queryAi) {
       showLandingView();
       return;
     }
 
-    if (rawHash.startsWith('s=')) {
+    // Extract optional &ai= suffix from hash
+    let mainPart = rawHash;
+    let aiRawParam = queryAi || null;
+    const ampAiIdx = rawHash.indexOf('&ai=');
+    if (ampAiIdx !== -1) {
+      mainPart = rawHash.slice(0, ampAiIdx);
+      aiRawParam = rawHash.slice(ampAiIdx + 4);
+    }
+
+    // Case 1: Pure #ai=<JSON> URL constructed from scratch by an AI Agent
+    if (mainPart.startsWith('ai=')) {
+      const aiObj = parseAiJsonString(mainPart.slice(3));
+      if (aiObj) {
+        const built = applyAiPatchToState({ id: aiObj.id || 'trip_ai_' + deterministicHashNum(JSON.stringify(aiObj)), title: aiObj.title || 'AI Coordinated Trip', crew: aiObj.crew || ['Michael', 'Dwight', 'Jim', 'Pam'] }, aiObj);
+        localStorage.setItem(`db_welcomed_${built.id}`, '1');
+        enterAppWithState(built, null, false);
+        return;
+      }
+    }
+
+    const aiPatchObj = parseAiJsonString(aiRawParam);
+
+    // Case 2: Standard #s=<LZString> (with optional &ai=<JSON> patch)
+    if (mainPart.startsWith('s=')) {
       try {
-        const decoded = decodeStandardHash(rawHash.slice(2));
+        const decoded = decodeStandardHash(mainPart.slice(2));
         if (decoded) {
-          enterAppWithState(decoded, null);
+          if (aiPatchObj) {
+            if (!loadLocalByTripId(decoded.id)) saveStateToLocal(decoded);
+            const patched = applyAiPatchToState(decoded, aiPatchObj);
+            enterAppWithState(patched, null, false);
+          } else {
+            enterAppWithState(decoded, null, false);
+          }
           return;
         }
       } catch {}
@@ -587,17 +1007,24 @@
       return;
     }
 
-    if (rawHash.startsWith('e=')) {
-      const payload = rawHash.slice(2);
+    // Case 3: Encrypted #e=<AES-256> (with optional &ai=<JSON> patch)
+    if (mainPart.startsWith('e=')) {
+      const payload = mainPart.slice(2);
       pendingEncryptedPayload = payload;
+      pendingAiPatchObj = aiPatchObj;
 
-      // Try cached password from sessionStorage if any
       try {
         const savedTrip = JSON.parse(localStorage.getItem(LAST_TRIP_STORAGE_KEY) || 'null');
         const cachedPw = savedTrip?.id ? sessionStorage.getItem(`db_pw_${savedTrip.id}`) : null;
         if (cachedPw) {
           const decrypted = await decryptHashToState(payload, cachedPw);
-          enterAppWithState(decrypted, cachedPw);
+          if (aiPatchObj) {
+            if (!loadLocalByTripId(decrypted.id)) saveStateToLocal(decrypted);
+            const patched = applyAiPatchToState(decrypted, aiPatchObj);
+            enterAppWithState(patched, cachedPw, false);
+          } else {
+            enterAppWithState(decrypted, cachedPw, false);
+          }
           return;
         }
       } catch {}
@@ -607,7 +1034,10 @@
       document.getElementById('unlock-error').classList.add('hidden');
       document.getElementById('unlock-password-input').value = '';
       document.getElementById('unlock-modal').classList.remove('hidden');
+      return;
     }
+
+    showLandingView();
   }
 
   // =========================================================
@@ -1110,6 +1540,17 @@
     document.getElementById('hero-updated').textContent = `${formatAgo(loc.updatedAt)}${loc.reportedBy ? ' • ' + loc.reportedBy : ''}`;
     document.getElementById('progress-fill').style.width = `${loc.progressPct ?? 0}%`;
 
+    // 30-Minute Stale GPS Signifier
+    const ageMs = loc.updatedAt ? Date.now() - Date.parse(loc.updatedAt) : Infinity;
+    const isStale30m = !Number.isFinite(ageMs) || ageMs >= 30 * 60 * 1000;
+    const staleBanner = document.getElementById('gps-stale-banner');
+    const gpsBtn = document.getElementById('gps-snap-btn');
+    if (staleBanner) staleBanner.classList.toggle('hidden', !isStale30m);
+    if (gpsBtn) {
+      gpsBtn.classList.toggle('gps-stale-alert', isStale30m);
+      gpsBtn.textContent = isStale30m ? '⚠️ Update GPS' : '📍 Update GPS';
+    }
+
     document.getElementById('m-miles-left').textContent = formatMiles(loc.remainingMeters);
     document.getElementById('m-speed').textContent = loc.lat != null ? `${loc.speedMph ?? 0} mph` : '—';
     const activeStops = (appState.trip?.stops || []).filter((s) => !s.reached);
@@ -1388,6 +1829,67 @@
   // =========================================================
   // STOPS, MAP & NOTES
   // =========================================================
+  function populateStopsContainer(container, stops, dest, loc) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!stops.length && !dest) {
+      container.innerHTML = `<p class="muted" style="text-align:center; padding:8px 0;">No stops or destination yet — add a stop or set the destination below.</p>`;
+      return;
+    }
+
+    stops.forEach((s, idx) => {
+      const row = document.createElement('div');
+      row.className = `stop-row${s.reached ? ' reached' : ''}`;
+      row.innerHTML = `
+        <div style="min-width:0;">
+          <div class="stop-name" style="font-weight:800; font-size:0.96rem;">Stop ${idx + 1}: ${esc(s.name)}</div>
+          <div class="muted">Added by ${esc(s.addedBy || 'Crew')}</div>
+        </div>
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          <button class="subtle-pill-btn toggle-stop" type="button">${s.reached ? 'Undo' : '✓ Done'}</button>
+          <button class="subtle-pill-btn remove-stop" type="button" title="Remove Stop">✕</button>
+        </div>`;
+      row.querySelector('.toggle-stop').addEventListener('click', async () => {
+        s.reached = !s.reached;
+        renderHero();
+        renderStops();
+        updateMap();
+        await syncStateToUrl(`Marked stop "${s.name}" ${s.reached ? 'done' : 'active'}`);
+      });
+      row.querySelector('.remove-stop').addEventListener('click', async () => {
+        appState.trip.stops = appState.trip.stops.filter((x) => x.id !== s.id);
+        if (!appState.trip.deletedStopIds.includes(s.id)) appState.trip.deletedStopIds.push(s.id);
+        renderHero();
+        renderStops();
+        updateMap();
+        updateBadges();
+        await syncStateToUrl(`Removed stop "${s.name}"`);
+      });
+      container.appendChild(row);
+    });
+
+    if (dest) {
+      const destRow = document.createElement('div');
+      destRow.className = 'stop-row';
+      destRow.style.borderColor = 'rgba(200, 255, 61, 0.35)';
+      destRow.innerHTML = `
+        <div style="min-width:0;">
+          <div style="font-weight:800; color:var(--lime);">🏁 Final Dest: ${esc(dest.name)}</div>
+          <div class="muted">${esc(dest.label || '')}${loc.remainingSec != null ? ' • ' + formatDuration(loc.remainingSec) + ' left' : ''}</div>
+        </div>
+        <button class="subtle-pill-btn remove-dest-inline" type="button" title="Clear Destination">Clear</button>`;
+      destRow.querySelector('.remove-dest-inline').addEventListener('click', async () => {
+        appState.trip.destination = null;
+        appState.location.remainingMeters = null;
+        appState.location.remainingSec = null;
+        renderAll();
+        await syncStateToUrl('Cleared final destination');
+      });
+      container.appendChild(destRow);
+    }
+  }
+
   function renderStops() {
     if (!appState) return;
     const dest = appState.trip?.destination;
@@ -1413,58 +1915,8 @@
       waze.classList.add('hidden');
     }
 
-    const list = document.getElementById('stops-list');
-    list.innerHTML = '';
-
-    if (!stops.length && !dest) {
-      list.innerHTML = `<p class="muted" style="text-align:center; padding:8px 0;">Set a destination or pick a quick pit stop above.</p>`;
-      return;
-    }
-
-    stops.forEach((s, idx) => {
-      const row = document.createElement('div');
-      row.className = `stop-row${s.reached ? ' reached' : ''}`;
-      row.innerHTML = `
-        <div style="min-width:0;">
-          <div class="stop-name" style="font-weight:800; font-size:0.96rem;">Stop ${idx + 1}: ${esc(s.name)}</div>
-          <div class="muted">Added by ${esc(s.addedBy || 'Crew')}</div>
-        </div>
-        <div style="display:flex; gap:6px; flex-shrink:0;">
-          <button class="subtle-pill-btn toggle-stop" type="button">${s.reached ? 'Undo' : '✓ Done'}</button>
-          <button class="subtle-pill-btn remove-stop" type="button">✕</button>
-        </div>`;
-      row.querySelector('.toggle-stop').addEventListener('click', async () => {
-        s.reached = !s.reached;
-        renderHero();
-        renderStops();
-        updateMap();
-        await syncStateToUrl(`Marked stop "${s.name}" ${s.reached ? 'done' : 'active'}`);
-      });
-      row.querySelector('.remove-stop').addEventListener('click', async () => {
-        appState.trip.stops = appState.trip.stops.filter((x) => x.id !== s.id);
-        if (!appState.trip.deletedStopIds.includes(s.id)) appState.trip.deletedStopIds.push(s.id);
-        renderHero();
-        renderStops();
-        updateMap();
-        updateBadges();
-        await syncStateToUrl(`Removed stop "${s.name}"`);
-      });
-      list.appendChild(row);
-    });
-
-    if (dest) {
-      const destRow = document.createElement('div');
-      destRow.className = 'stop-row';
-      destRow.style.borderColor = 'rgba(200, 255, 61, 0.35)';
-      destRow.innerHTML = `
-        <div style="min-width:0;">
-          <div style="font-weight:800; color:var(--lime);">🏁 ${esc(dest.name)}</div>
-          <div class="muted">${esc(dest.label || '')}${loc.remainingSec != null ? ' • ' + formatDuration(loc.remainingSec) + ' left' : ''}</div>
-        </div>
-        <button class="subtle-pill-btn edit-dest-inline" type="button">Edit</button>`;
-      destRow.querySelector('.edit-dest-inline').addEventListener('click', () => openSheet('sheet-dest'));
-      list.appendChild(destRow);
-    }
+    populateStopsContainer(document.getElementById('stops-list'), stops, dest, loc);
+    populateStopsContainer(document.getElementById('sheet-current-stops-list'), stops, dest, loc);
   }
 
   function initMap() {
@@ -1558,6 +2010,106 @@
     });
   }
 
+  function renderMicroModules() {
+    if (!appState) return;
+    const box = document.getElementById('home-micromodules-box');
+    if (!box) return;
+    box.innerHTML = '';
+
+    const mms = appState.microModules || [];
+    mms.forEach((mm) => {
+      const card = document.createElement('section');
+      card.className = 'card';
+      const icon = mm.icon || (mm.type === 'checklist' ? '📦' : mm.type === 'poll' ? '🍕' : mm.type === 'countdown' ? '⏳' : '🔑');
+
+      let bodyHtml = '';
+      if (mm.type === 'checklist') {
+        bodyHtml = (mm.items || [])
+          .map(
+            (item, idx) => `
+          <div class="mm-check-row ${item.done ? 'done' : ''}" data-idx="${idx}">
+            <span>${item.done ? '✅' : '⬜'}</span>
+            <span>${esc(item.text)}</span>
+          </div>`
+          )
+          .join('');
+      } else if (mm.type === 'kv') {
+        bodyHtml = (mm.pairs || [])
+          .map(
+            (pair) => `
+          <div class="mm-kv-row">
+            <span class="muted" style="font-weight:700;">${esc(pair.k)}</span>
+            <strong style="font-size:0.95rem;">${esc(pair.v)}</strong>
+          </div>`
+          )
+          .join('');
+      } else if (mm.type === 'poll') {
+        bodyHtml = (mm.options || [])
+          .map((opt, idx) => {
+            const votes = Array.isArray(opt.votes) ? opt.votes : [];
+            const voted = votes.includes(currentUser);
+            return `
+            <button type="button" class="mm-poll-btn ${voted ? 'voted' : ''}" data-idx="${idx}">
+              <span>${esc(opt.label)}</span>
+              <span class="muted">${votes.length} vote${votes.length === 1 ? '' : 's'}${votes.length ? ' (' + esc(votes.join(', ')) + ')' : ''}</span>
+            </button>`;
+          })
+          .join('');
+      } else if (mm.type === 'countdown') {
+        const diffSec = mm.targetTime ? Math.max(0, Math.round((Date.parse(mm.targetTime) - Date.now()) / 1000)) : 0;
+        bodyHtml = `
+          <div style="text-align:center; padding:8px 0;">
+            <div style="font-size:2rem; font-weight:800; color:var(--lime);">${diffSec > 0 ? esc(formatDuration(diffSec)) : 'Happening Now!'}</div>
+            <div class="muted">${mm.targetTime ? new Date(mm.targetTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
+          </div>`;
+      }
+
+      card.innerHTML = `
+        <div class="card-head">
+          <div class="card-title">${esc(icon)} ${esc(mm.title)}</div>
+          <button type="button" class="subtle-pill-btn del-mm-btn" style="font-size:0.7rem;">✕ Remove</button>
+        </div>
+        <div>${bodyHtml}</div>`;
+
+      card.querySelectorAll('.mm-check-row').forEach((row) => {
+        row.addEventListener('click', async () => {
+          const i = Number(row.dataset.idx);
+          if (mm.items?.[i]) {
+            mm.items[i].done = !mm.items[i].done;
+            renderMicroModules();
+            await syncStateToUrl(`Updated checklist "${mm.title}"`);
+          }
+        });
+      });
+
+      card.querySelectorAll('.mm-poll-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const i = Number(btn.dataset.idx);
+          if (mm.options?.[i]) {
+            mm.options[i].votes = Array.isArray(mm.options[i].votes) ? mm.options[i].votes : [];
+            if (mm.options[i].votes.includes(currentUser)) {
+              mm.options[i].votes = mm.options[i].votes.filter((u) => u !== currentUser);
+            } else {
+              mm.options[i].votes.push(currentUser);
+            }
+            renderMicroModules();
+            await syncStateToUrl(`${currentUser} voted in "${mm.title}"`);
+          }
+        });
+      });
+
+      card.querySelector('.del-mm-btn')?.addEventListener('click', async () => {
+        appState.microModules = appState.microModules.filter((x) => x.id !== mm.id);
+        if (!appState.deletedMicroIds.includes(mm.id)) appState.deletedMicroIds.push(mm.id);
+        renderMicroModules();
+        renderModulesSettingsSheet();
+        await syncStateToUrl(`Removed micro-module "${mm.title}"`);
+      });
+
+      box.appendChild(card);
+    });
+  }
+
   function renderModulesSettingsSheet() {
     if (!appState) return;
     document.getElementById('settings-trip-title').value = appState.title || '';
@@ -1566,8 +2118,9 @@
       ? '🔒 Currently encrypted with AES-256-GCM. Clear password and click Apply to switch to a standard link.'
       : '🔗 Currently using a standard unencrypted link. Enter a password and click Apply to encrypt.';
 
-    const hasBackup = Boolean(localStorage.getItem(`db_backup_${appState.id}`));
-    document.getElementById('settings-restore-backup-btn')?.classList.toggle('hidden', !hasBackup);
+    document.querySelectorAll('#theme-picker-grid .theme-chip').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.theme === currentTheme);
+    });
 
     const defs = [
       { key: 'locations', ico: '📍', name: 'Trip Locations & Stops', desc: 'Live ETA, GPS readout, pit stops & map' },
@@ -1597,6 +2150,41 @@
       });
       grid.appendChild(btn);
     });
+
+    // Micro-modules list in settings
+    const mmList = document.getElementById('settings-micromodules-list');
+    if (mmList) {
+      const mms = appState.microModules || [];
+      mmList.innerHTML = mms.length
+        ? mms.map((m) => `<div class="backup-item"><span style="font-weight:800; font-size:0.86rem;">${esc(m.icon || '🧩')} ${esc(m.title)}</span><span class="muted">${esc(m.type)}</span></div>`).join('')
+        : `<div class="muted" style="font-size:0.8rem;">No micro-modules yet. Tap "+ Add Micro-Module" above.</div>`;
+    }
+
+    // Multi-Backup History List
+    const bkBox = document.getElementById('settings-backups-list');
+    if (bkBox) {
+      const backups = loadBackupsList();
+      if (!backups.length) {
+        bkBox.innerHTML = `<div class="muted" style="font-size:0.8rem; padding:6px 0;">No backups saved yet. Backups are created automatically before any Smart Merge, or tap "+ Save Snapshot" above.</div>`;
+      } else {
+        bkBox.innerHTML = '';
+        backups.forEach((b) => {
+          const when = b.createdAt ? new Date(b.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+          const row = document.createElement('div');
+          row.className = 'backup-item';
+          row.innerHTML = `
+            <div style="min-width:0;">
+              <div style="font-weight:800; font-size:0.86rem;">${esc(b.tripTitle)} <span class="muted">(${esc(b.reason)} · ${esc(when)})</span></div>
+              <div class="muted" style="font-size:0.75rem;">${esc(b.summary)}</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-purple restore-bk-btn">Restore</button>`;
+          row.querySelector('.restore-bk-btn').addEventListener('click', () => {
+            openRestoreBackupConfirmation(b);
+          });
+          bkBox.appendChild(row);
+        });
+      }
+    }
   }
 
   function updateBadges() {
@@ -1678,9 +2266,30 @@
     renderStops();
     updateMap();
     renderMessages();
+    renderMicroModules();
     updateBadges();
     updateInstallUI();
     updateShareBarUI();
+  }
+
+  async function copyAiRecipePrompt() {
+    await syncStateToUrl(null);
+    const activeUrl = appState ? window.location.href : 'https://dangerous.business/#s=<YOUR_TRIP_LINK>';
+    const crewList = appState?.crew?.join(', ') || 'Michael, Dwight, Jim, Pam';
+    const promptText = [
+      `You are helping our group update our Dangerous.Business trip link (spec at https://dangerous.business/llms.txt).`,
+      `Crew members: ${crewList}.`,
+      `Current Trip URL: ${activeUrl}`,
+      ``,
+      `Task: Read the attached receipt / update, construct a URL-encoded JSON patch using the &ai= parameter (e.g. {"addExpenses":[{"description":"Merchant","amount":0.00,"payer":"${currentUser}"}]} or addStops / addNotes / addMicroModules), append &ai=<encoded_json> to the Current Trip URL above, and reply with the clickable updated URL!`,
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(promptText);
+      showToast('Copied AI Receipt Prompt + Trip Link!');
+    } catch {
+      showToast('Could not copy automatically');
+    }
   }
 
   // =========================================================
@@ -1719,7 +2328,7 @@
     document.getElementById('merge-confirm-btn')?.addEventListener('click', () => {
       if (!pendingMergeContext) return;
       const { local, merged, passwordUsed } = pendingMergeContext;
-      try { localStorage.setItem(`db_backup_${local.id}`, JSON.stringify(local)); } catch {}
+      saveBackupSnapshot(local, 'Before Smart Merge');
       pendingMergeContext = null;
       finalizeEnterApp(merged, passwordUsed, 'Smart Merge complete (backup saved)!');
     });
@@ -1734,21 +2343,106 @@
     document.getElementById('merge-use-incoming-btn')?.addEventListener('click', () => {
       if (!pendingMergeContext) return;
       const { local, incoming, passwordUsed } = pendingMergeContext;
-      try { localStorage.setItem(`db_backup_${local.id}`, JSON.stringify(local)); } catch {}
+      saveBackupSnapshot(local, 'Before Link Replace');
       pendingMergeContext = null;
       finalizeEnterApp(incoming, passwordUsed, 'Loaded incoming link (backup saved)!');
     });
 
-    document.getElementById('settings-restore-backup-btn')?.addEventListener('click', async () => {
+    // Restore Backup Confirmation Warning Modal
+    document.getElementById('restore-cancel-btn')?.addEventListener('click', () => {
+      pendingRestoreEntry = null;
+      document.getElementById('restore-confirm-modal')?.classList.add('hidden');
+    });
+    document.getElementById('restore-proceed-btn')?.addEventListener('click', () => {
+      if (!pendingRestoreEntry?.state) return;
+      if (appState) saveBackupSnapshot(appState, 'Before Restore');
+      const targetState = pendingRestoreEntry.state;
+      pendingRestoreEntry = null;
+      document.getElementById('restore-confirm-modal')?.classList.add('hidden');
+      closeAllSheets();
+      finalizeEnterApp(targetState, activePassword, 'Restored backup snapshot!');
+    });
+
+    document.getElementById('settings-save-backup-now-btn')?.addEventListener('click', () => {
       if (!appState) return;
-      try {
-        const raw = localStorage.getItem(`db_backup_${appState.id}`);
-        if (raw) {
-          const backup = JSON.parse(raw);
-          closeAllSheets();
-          finalizeEnterApp(backup, activePassword, 'Restored pre-merge backup!');
+      saveBackupSnapshot(appState, 'Manual Snapshot');
+      renderModulesSettingsSheet();
+      showToast('Saved backup snapshot!');
+    });
+
+    // Theme Picker
+    document.querySelectorAll('#theme-picker-grid .theme-chip').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const th = btn.dataset.theme || 'dark';
+        applyTheme(th);
+        if (appState) {
+          appState.theme = th;
+          await syncStateToUrl(`Switched theme to ${th}`);
         }
-      } catch {}
+      });
+    });
+
+    // AI Recipe Copy Buttons
+    document.querySelectorAll('.copy-ai-recipe-btn').forEach((btn) => {
+      btn.addEventListener('click', copyAiRecipePrompt);
+    });
+
+    // Micro-Module Creator
+    document.getElementById('open-micromodule-creator-btn')?.addEventListener('click', () => {
+      closeAllSheets();
+      openSheet('sheet-micromodule');
+    });
+    document.getElementById('mm-type')?.addEventListener('change', (e) => {
+      const t = e.target.value;
+      const lbl = document.getElementById('mm-lines-label');
+      const linesWrap = document.getElementById('mm-lines-wrap');
+      const targetWrap = document.getElementById('mm-target-wrap');
+      const ta = document.getElementById('mm-lines');
+      linesWrap.classList.toggle('hidden', t === 'countdown');
+      targetWrap.classList.toggle('hidden', t !== 'countdown');
+      if (t === 'kv') {
+        lbl.textContent = 'Key : Value pairs (one per line)';
+        ta.placeholder = 'Gate Code : #1725\nWi-Fi : DunderNet\nRoom : Suite 304';
+      } else if (t === 'poll') {
+        lbl.textContent = 'Poll Options (one per line)';
+        ta.placeholder = "Alfredo's Pizza Cafe\nPoor Richard's Pub\nChili's";
+      } else {
+        lbl.textContent = 'Checklist Items (one per line)';
+        ta.placeholder = 'Cooler & Ice\nDundie Trophies\nAux Cord';
+      }
+    });
+    document.getElementById('micromodule-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!appState) return;
+      const type = document.getElementById('mm-type').value;
+      const title = document.getElementById('mm-title').value.trim();
+      const rawLines = document.getElementById('mm-lines').value.split('\n').map((s) => s.trim()).filter(Boolean);
+      const targetTime = document.getElementById('mm-target-time').value;
+      if (!title) return;
+
+      const mm = {
+        id: 'mm_' + Date.now(),
+        type,
+        title,
+        icon: type === 'checklist' ? '📦' : type === 'poll' ? '🍕' : type === 'countdown' ? '⏳' : '🔑',
+        items: type === 'checklist' ? rawLines.map((text) => ({ text, done: false })) : [],
+        pairs: type === 'kv'
+          ? rawLines.map((line) => {
+              const idx = line.indexOf(':');
+              return idx !== -1 ? { k: line.slice(0, idx).trim(), v: line.slice(idx + 1).trim() } : { k: line, v: '' };
+            })
+          : [],
+        options: type === 'poll' ? rawLines.map((label) => ({ label, votes: [] })) : [],
+        targetTime: type === 'countdown' ? targetTime : null,
+      };
+
+      appState.microModules = appState.microModules || [];
+      appState.microModules.push(mm);
+      document.getElementById('mm-title').value = '';
+      document.getElementById('mm-lines').value = '';
+      closeAllSheets();
+      renderMicroModules();
+      await syncStateToUrl(`Added micro-module "${title}"`);
     });
 
     const goLanding = () => {
@@ -1839,7 +2533,14 @@
       const pw = document.getElementById('unlock-password-input').value;
       try {
         const decrypted = await decryptHashToState(pendingEncryptedPayload, pw);
-        enterAppWithState(decrypted, pw);
+        if (pendingAiPatchObj) {
+          if (!loadLocalByTripId(decrypted.id)) saveStateToLocal(decrypted);
+          const patched = applyAiPatchToState(decrypted, pendingAiPatchObj);
+          pendingAiPatchObj = null;
+          enterAppWithState(patched, pw, false);
+        } else {
+          enterAppWithState(decrypted, pw, false);
+        }
       } catch {
         document.getElementById('unlock-error').classList.remove('hidden');
       }
@@ -1849,7 +2550,7 @@
     document.getElementById('welcome-go-btn')?.addEventListener('click', () => {
       if (!welcomeSelectedUser || !appState) return;
       currentUser = welcomeSelectedUser;
-      localStorage.setItem('roadtrip_who', currentUser);
+      localStorage.setItem('roadtrip_who_v4', currentUser);
       localStorage.setItem(`db_welcomed_${appState.id}`, '1');
       document.getElementById('welcome-splash').classList.add('hidden');
       renderAll();
@@ -1895,14 +2596,14 @@
     });
 
     // Quick Action Buttons
-    document.getElementById('qa-stop-btn')?.addEventListener('click', () => openSheet('sheet-stop'));
-    document.getElementById('stops-search-open-btn')?.addEventListener('click', () => openSheet('sheet-stop'));
+    document.getElementById('qa-stop-btn')?.addEventListener('click', () => { renderStops(); openSheet('sheet-stop'); });
+    document.getElementById('stops-search-open-btn')?.addEventListener('click', () => { renderStops(); openSheet('sheet-stop'); });
     document.getElementById('qa-cost-btn')?.addEventListener('click', () => openExpenseModal('expense', null));
     document.getElementById('split-add-expense-btn')?.addEventListener('click', () => openExpenseModal('expense', null));
     document.getElementById('split-add-payment-btn')?.addEventListener('click', () => openExpenseModal('payment', null));
     document.getElementById('qa-msg-btn')?.addEventListener('click', () => openSheet('sheet-msg'));
     document.getElementById('open-note-sheet-btn')?.addEventListener('click', () => openSheet('sheet-msg'));
-    document.getElementById('open-dest-sheet-btn')?.addEventListener('click', () => openSheet('sheet-dest'));
+    document.getElementById('open-dest-sheet-btn')?.addEventListener('click', () => { renderStops(); openSheet('sheet-stop'); });
 
     // Expense Form Submit
     document.querySelectorAll('.tx-preset-chip').forEach((c) => {
@@ -2082,11 +2783,15 @@
   }
 
   function init() {
+    applyTheme(currentTheme);
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
     bindEvents();
     handleHashRoute();
+    setInterval(() => {
+      if (appState && appState.modules?.locations) renderHero();
+    }, 30000);
   }
 
   init();

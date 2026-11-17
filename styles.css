@@ -1948,3 +1948,529 @@ body {
 .tab-panel.active { display: block; }
 .hidden { display: none !important; }
 .muted { color: var(--muted); font-size: 0.86rem; }
+
+/* =========================================================
+   COLLAPSIBLE SMART MERGE DIFFS & BACKUP HISTORY
+   ========================================================= */
+.diff-details {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-hi);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.diff-details summary {
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+}
+
+.diff-details summary::-webkit-details-marker { display: none; }
+
+.diff-summary-right {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--lime);
+}
+
+.diff-items-list {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.diff-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.diff-tag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.diff-tag.local {
+  background: rgba(200, 255, 61, 0.18);
+  color: var(--lime);
+  border: 1px solid rgba(200, 255, 61, 0.4);
+}
+
+.diff-tag.incoming {
+  background: rgba(86, 204, 242, 0.18);
+  color: var(--sky);
+  border: 1px solid rgba(86, 204, 242, 0.4);
+}
+
+.diff-tag.modified {
+  background: rgba(251, 191, 36, 0.18);
+  color: #FBBF24;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+}
+
+.diff-tag.shared {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+/* 30-Minute Stale GPS Signifier */
+.gps-stale-banner {
+  margin-top: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: rgba(251, 191, 36, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  color: #FDE68A;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gps-stale-alert {
+  background: #FBBF24 !important;
+  color: #07080D !important;
+  border-color: #FBBF24 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.65);
+  animation: radar 1.4s infinite;
+}
+
+/* Docs & Code Snippets */
+.code-snippet {
+  background: #07080D;
+  border: 1px solid var(--border-hi);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.74rem;
+  color: var(--lime);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 10px 0 0;
+}
+
+.docs-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #CBD5E1;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+/* Theme Picker & Backups List */
+.theme-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.theme-chip {
+  padding: 10px 8px;
+  border-radius: 14px;
+  background: var(--card-soft);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: center;
+}
+
+.theme-chip.active {
+  border-color: var(--lime);
+  background: rgba(200, 255, 61, 0.15);
+  color: var(--lime);
+}
+
+.backups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.backup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--card-soft);
+  border: 1px solid var(--border);
+}
+
+/* URL Micro-Modules */
+.mm-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--card-soft);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.mm-check-row.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.mm-kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--card-soft);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+
+.mm-poll-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 13px;
+  border-radius: 13px;
+  background: var(--card-soft);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.92rem;
+  margin-bottom: 7px;
+  cursor: pointer;
+}
+
+.mm-poll-btn.voted {
+  border-color: var(--lime);
+  background: rgba(200, 255, 61, 0.14);
+}
+
+/* =========================================================
+   5 THEMES: LIGHT, UNICORN, WINDOWS 98 SE, BRUTALIST
+   ========================================================= */
+
+/* 1. LIGHT THEME (Daylight Crisp) */
+html[data-theme="light"] {
+  --bg: #F1F5F9;
+  --card: #FFFFFF;
+  --card-soft: #F8FAFC;
+  --border: rgba(15, 23, 42, 0.1);
+  --border-hi: rgba(15, 23, 42, 0.18);
+  --text: #0F172A;
+  --muted: #475569;
+  --lime: #16A34A;
+  --purple: #6D28D9;
+  --sky: #0284C7;
+  --coral: #E11D48;
+}
+
+html[data-theme="light"] .hero-card,
+html[data-theme="light"] .card,
+html[data-theme="light"] .step-card,
+html[data-theme="light"] .mod-card,
+html[data-theme="light"] .uc-card,
+html[data-theme="light"] .sheet,
+html[data-theme="light"] .wizard-card {
+  background: #FFFFFF;
+  color: #0F172A;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="light"] .hero-time,
+html[data-theme="light"] .where-text,
+html[data-theme="light"] .stat-v,
+html[data-theme="light"] .qa-label,
+html[data-theme="light"] .share-bar-title {
+  color: #0F172A;
+}
+
+html[data-theme="light"] .where-box {
+  background: #F1F5F9;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+html[data-theme="light"] .input {
+  background: #F8FAFC;
+  color: #0F172A;
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
+html[data-theme="light"] .btn-lime,
+html[data-theme="light"] .qa-btn.accent .qa-circle {
+  background: #16A34A;
+  border-color: #16A34A;
+  color: #FFFFFF;
+}
+
+html[data-theme="light"] .qa-circle {
+  background: #FFFFFF;
+  color: #0F172A;
+}
+
+html[data-theme="light"] .bottom-nav,
+html[data-theme="light"] .landing-nav,
+html[data-theme="light"] .share-update-bar {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
+/* 2. UNICORN THEME (Pastel Iridescent Dream) */
+html[data-theme="unicorn"] {
+  --bg: #FFF0F8;
+  --card: rgba(255, 255, 255, 0.88);
+  --card-soft: #FDF4FF;
+  --border: rgba(217, 70, 239, 0.22);
+  --border-hi: rgba(217, 70, 239, 0.38);
+  --text: #3B0764;
+  --muted: #7E22CE;
+  --lime: #EC4899;
+  --purple: #8B5CF6;
+  --sky: #06B6D4;
+  --coral: #F43F5E;
+}
+
+html[data-theme="unicorn"] body {
+  background: linear-gradient(135deg, #FFE4F3 0%, #EDE9FE 48%, #E0F7FA 100%) fixed;
+}
+
+html[data-theme="unicorn"] .hero-card,
+html[data-theme="unicorn"] .card,
+html[data-theme="unicorn"] .step-card,
+html[data-theme="unicorn"] .mod-card,
+html[data-theme="unicorn"] .uc-card,
+html[data-theme="unicorn"] .sheet,
+html[data-theme="unicorn"] .wizard-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 2px solid rgba(236, 72, 153, 0.3);
+  box-shadow: 0 14px 32px rgba(217, 70, 239, 0.16);
+  color: #3B0764;
+}
+
+html[data-theme="unicorn"] .hero-time,
+html[data-theme="unicorn"] .where-text,
+html[data-theme="unicorn"] .stat-v,
+html[data-theme="unicorn"] .qa-label,
+html[data-theme="unicorn"] .share-bar-title {
+  color: #3B0764;
+}
+
+html[data-theme="unicorn"] .where-box {
+  background: linear-gradient(135deg, rgba(252, 231, 243, 0.8), rgba(237, 233, 254, 0.8));
+}
+
+html[data-theme="unicorn"] .btn-lime,
+html[data-theme="unicorn"] .qa-btn.accent .qa-circle {
+  background: linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #06B6D4 100%);
+  border: none;
+  color: #FFFFFF;
+}
+
+html[data-theme="unicorn"] .qa-circle {
+  background: #FFFFFF;
+  color: #9333EA;
+}
+
+html[data-theme="unicorn"] .input {
+  background: #FFFFFF;
+  color: #3B0764;
+  border-color: rgba(217, 70, 239, 0.35);
+}
+
+html[data-theme="unicorn"] .bottom-nav,
+html[data-theme="unicorn"] .landing-nav,
+html[data-theme="unicorn"] .share-update-bar {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(236, 72, 153, 0.35);
+}
+
+/* 3. WINDOWS 98 SE THEME (Classic Teal & Beveled Gray) */
+html[data-theme="win98"] {
+  --bg: #008080;
+  --card: #C0C0C0;
+  --card-soft: #DFDFDF;
+  --border: #808080;
+  --border-hi: #FFFFFF;
+  --text: #000000;
+  --muted: #222222;
+  --lime: #000080;
+  --purple: #000080;
+  --sky: #000080;
+  --coral: #800000;
+  --radius: 0px;
+}
+
+html[data-theme="win98"] body {
+  font-family: Tahoma, 'MS Sans Serif', Geneva, sans-serif;
+  background: #008080;
+  color: #000000;
+}
+
+html[data-theme="win98"] .ambient-glow,
+html[data-theme="win98"] .ambient-glow-2 {
+  display: none;
+}
+
+html[data-theme="win98"] .hero-card,
+html[data-theme="win98"] .card,
+html[data-theme="win98"] .step-card,
+html[data-theme="win98"] .mod-card,
+html[data-theme="win98"] .uc-card,
+html[data-theme="win98"] .sheet,
+html[data-theme="win98"] .wizard-card,
+html[data-theme="win98"] .share-update-bar,
+html[data-theme="win98"] .landing-nav,
+html[data-theme="win98"] .bottom-nav,
+html[data-theme="win98"] .btn,
+html[data-theme="win98"] .qa-circle,
+html[data-theme="win98"] .subtle-pill-btn {
+  background: #C0C0C0 !important;
+  color: #000000 !important;
+  border-radius: 0px !important;
+  border-top: 2px solid #FFFFFF !important;
+  border-left: 2px solid #FFFFFF !important;
+  border-right: 2px solid #000000 !important;
+  border-bottom: 2px solid #000000 !important;
+  box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #DFDFDF !important;
+}
+
+html[data-theme="win98"] .card-head,
+html[data-theme="win98"] .hero-top {
+  background: linear-gradient(90deg, #000080, #1084D0);
+  color: #FFFFFF !important;
+  padding: 5px 8px;
+  margin: -14px -14px 12px -14px;
+}
+
+html[data-theme="win98"] .card-title,
+html[data-theme="win98"] .dest-eyebrow {
+  color: #FFFFFF !important;
+}
+
+html[data-theme="win98"] .hero-time,
+html[data-theme="win98"] .where-text,
+html[data-theme="win98"] .stat-v,
+html[data-theme="win98"] .share-bar-title {
+  color: #000000 !important;
+}
+
+html[data-theme="win98"] .qa-label {
+  color: #FFFFFF !important;
+  text-shadow: 1px 1px 0 #000000;
+}
+
+html[data-theme="win98"] .where-box,
+html[data-theme="win98"] .input {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  border-radius: 0px !important;
+  border-top: 2px solid #808080 !important;
+  border-left: 2px solid #808080 !important;
+  border-right: 2px solid #FFFFFF !important;
+  border-bottom: 2px solid #FFFFFF !important;
+}
+
+/* 4. BRUTALIST THEME (Raw Offset Shadows & Stark Borders) */
+html[data-theme="brutalist"] {
+  --bg: #FFFDF5;
+  --card: #FFFFFF;
+  --card-soft: #FFE600;
+  --border: #000000;
+  --border-hi: #000000;
+  --text: #000000;
+  --muted: #222222;
+  --lime: #FFE600;
+  --purple: #FF3366;
+  --sky: #00E5FF;
+  --coral: #FF3366;
+  --radius: 0px;
+}
+
+html[data-theme="brutalist"] body {
+  background: #FFFDF5;
+  color: #000000;
+}
+
+html[data-theme="brutalist"] .ambient-glow,
+html[data-theme="brutalist"] .ambient-glow-2 {
+  display: none;
+}
+
+html[data-theme="brutalist"] .hero-card,
+html[data-theme="brutalist"] .card,
+html[data-theme="brutalist"] .step-card,
+html[data-theme="brutalist"] .mod-card,
+html[data-theme="brutalist"] .uc-card,
+html[data-theme="brutalist"] .sheet,
+html[data-theme="brutalist"] .wizard-card,
+html[data-theme="brutalist"] .share-update-bar,
+html[data-theme="brutalist"] .landing-nav {
+  background: #FFFFFF !important;
+  color: #000000 !important;
+  border: 3px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+}
+
+html[data-theme="brutalist"] .btn,
+html[data-theme="brutalist"] .qa-circle,
+html[data-theme="brutalist"] .subtle-pill-btn {
+  background: #FFE600 !important;
+  color: #000000 !important;
+  border: 3px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+html[data-theme="brutalist"] .hero-time,
+html[data-theme="brutalist"] .where-text,
+html[data-theme="brutalist"] .stat-v,
+html[data-theme="brutalist"] .qa-label,
+html[data-theme="brutalist"] .share-bar-title {
+  color: #000000 !important;
+}
+
+html[data-theme="brutalist"] .where-box,
+html[data-theme="brutalist"] .input {
+  background: #FFFDF5 !important;
+  color: #000000 !important;
+  border: 3px solid #000000 !important;
+  border-radius: 0px !important;
+}
+
+html[data-theme="brutalist"] .bottom-nav {
+  background: #FFE600 !important;
+  border-top: 3px solid #000000 !important;
+}
+

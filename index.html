@@ -51,6 +51,7 @@
       <nav class="landing-links">
         <a href="#how-it-works">How It Works</a>
         <a href="#modules-sec">Modules</a>
+        <a href="#docs-sec">AI &amp; Docs</a>
         <a href="#use-cases">Use Cases</a>
       </nav>
 
@@ -101,12 +102,12 @@
             <span>State lives in the link</span>
           </div>
           <div class="trust-item">
-            <strong>AES-256-GCM</strong>
-            <span>Optional password lock</span>
+            <strong>Carbon &amp; Silicon</strong>
+            <span>Human + AI Agent ready</span>
           </div>
           <div class="trust-item">
-            <strong>Smart Merge</strong>
-            <span>Combines crew updates</span>
+            <strong>AES-256-GCM</strong>
+            <span>Optional password lock</span>
           </div>
         </div>
       </div>
@@ -243,6 +244,53 @@
           <div class="uc-emoji">🌴</div>
           <h3>Spring Break &amp; Vegas Runs</h3>
           <p>Keep door codes, meetup spots, shared playlists, and group tabs locked behind a trip password. Share updates over Signal or iMessage with zero server footprint.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOCUMENTATION, AI AGENT PROTOCOL & MICRO-MODULES -->
+    <section id="docs-sec" class="landing-section">
+      <div class="section-header">
+        <div class="section-eyebrow">DOCUMENTATION • FOR CARBON &amp; SILICON</div>
+        <h2 class="section-title">Built for humans. Native for AI agents.</h2>
+        <p class="section-sub">Snap a photo of a receipt, drop it into Gemini, ChatGPT, Claude, or Meta AI with your trip link, and let your AI append the update directly to the URL.</p>
+      </div>
+
+      <div class="modules-showcase-grid">
+        <div class="mod-card">
+          <div class="mod-tag">01 • AI AGENT URL PROTOCOL (&amp;ai=)</div>
+          <h3>Let Your AI Update the Trip Link</h3>
+          <p>AI assistants don't need to compress binary hashes. Any AI can read <a href="./llms.txt" target="_blank" class="creator-link">/llms.txt</a> and append <code>&amp;ai=&lt;URL-encoded JSON&gt;</code> to your existing link—or build a brand-new trip at <code>#ai=&lt;JSON&gt;</code>.</p>
+          <pre class="code-snippet">https://dangerous.business/#s=N4Ig...&amp;ai={"addExpenses":[{"description":"Chili's Dinner","amount":84.50,"payer":"Michael"}]}</pre>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+            <button type="button" class="btn btn-sm btn-lime copy-ai-recipe-btn">📋 Copy AI Receipt Prompt</button>
+            <a href="./llms.txt" target="_blank" rel="noopener" class="btn btn-sm">Read /llms.txt ↗</a>
+          </div>
+        </div>
+
+        <div class="mod-card">
+          <div class="mod-tag">02 • URL MICRO-MODULES</div>
+          <h3>Send Custom Micro-Modules in the Link</h3>
+          <p>Extend any trip on the fly—either from <strong>⚙ Settings → + Add Micro-Module</strong> or via an AI URL patch. Micro-modules travel inside the URL hash and render right on the Overview screen:</p>
+          <ul class="docs-list">
+            <li><strong>📦 Checklist (`checklist`):</strong> Interactive packing &amp; todo lists anyone can check off.</li>
+            <li><strong>🍕 Crew Poll (`poll`):</strong> One-tap voting on dinner spots, activities, or tee times.</li>
+            <li><strong>🔑 Pinned Codes (`kv`):</strong> Key-value cards for Wi-Fi passwords, gate codes &amp; flight numbers.</li>
+            <li><strong>⏳ Countdown (`countdown`):</strong> Live countdown timer to reservations, flights, or check-out.</li>
+          </ul>
+          <pre class="code-snippet">&amp;ai={"addMicroModules":[{"type":"kv","title":"Hotel Info","icon":"🔑","pairs":[{"k":"Gate Code","v":"#1725"}]}]}</pre>
+        </div>
+
+        <div class="mod-card">
+          <div class="mod-tag">03 • SMART MERGE &amp; MULTI-BACKUP VAULT</div>
+          <h3>Zero Accidental Data Loss</h3>
+          <p>When you open a link from the group chat, Dangerous.Business compares every item on your device against the incoming link with collapsible diffs (showing what's only on your device, what's new in the link, and what's shared). Every merge automatically saves a timestamped snapshot in <strong>⚙ Settings → Backups</strong>.</p>
+        </div>
+
+        <div class="mod-card">
+          <div class="mod-tag">04 • 5 INSTANT THEMES</div>
+          <h3>Switch Vibes Anytime</h3>
+          <p>Open <strong>⚙ Settings</strong> inside any trip to switch between <strong>🌙 Dark Tactical</strong>, <strong>☀️ Daylight Crisp</strong>, <strong>🦄 Unicorn Sparkle</strong>, <strong>💾 Windows 98 SE</strong>, and <strong>🧱 Raw Brutalist</strong>.</p>
         </div>
       </div>
     </section>
@@ -465,6 +513,24 @@
   </div>
 
   <!-- =========================================================
+       VIEW 3C: RESTORE BACKUP CONFIRMATION WARNING MODAL
+       ========================================================= -->
+  <div id="restore-confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="restore-modal-title">
+    <div class="wizard-card" style="max-width:460px;">
+      <div class="merge-warn-badge">⚠️ CONFIRM BACKUP RESTORE</div>
+      <h2 class="wizard-title" id="restore-modal-title" style="margin-top:6px;">Restore Earlier Backup?</h2>
+      <p class="muted" style="margin:6px 0 12px;">
+        You are about to replace your active trip state with an earlier backup snapshot. Your current state will first be saved as a new backup so nothing is lost.
+      </p>
+      <div id="restore-confirm-details" class="merge-diff-box"></div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button id="restore-cancel-btn" class="btn btn-full" type="button">Cancel</button>
+        <button id="restore-proceed-btn" class="btn btn-lime btn-full" type="button">✓ Yes, Restore Backup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
        VIEW 4: ACTIVE TRIP WEB APP (URL-DRIVEN)
        ========================================================= -->
   <div id="app-view" class="hidden">
@@ -515,7 +581,7 @@
         </button>
 
         <div class="topbar-actions">
-          <button id="open-modules-sheet-btn" class="subtle-pill-btn" type="button" title="Configure Modules &amp; Security">⚙ Modules</button>
+          <button id="open-modules-sheet-btn" class="subtle-pill-btn" type="button" title="Trip Settings, Themes, Backups &amp; Modules">⚙ Settings</button>
           <button id="top-landing-btn" class="subtle-pill-btn" type="button" title="Landing Page / New Trip">Home</button>
         </div>
       </header>
@@ -542,7 +608,7 @@
             <span class="dest-eyebrow" id="hero-dest-eyebrow">NO DESTINATION SET</span>
             <div style="display:flex; gap:6px;">
               <button id="gps-snap-btn" class="subtle-pill-btn lime-border" type="button">📍 Update GPS</button>
-              <button id="open-dest-sheet-btn" class="subtle-pill-btn" type="button">Edit Dest</button>
+              <button id="open-dest-sheet-btn" class="subtle-pill-btn" type="button">📍 Stops &amp; Dest</button>
             </div>
           </div>
 
@@ -555,6 +621,9 @@
             <div class="where-label">Where We Are</div>
             <div class="where-text" id="hero-where">Tap "📍 Update GPS" above to stamp location</div>
             <div class="where-meta" id="hero-updated">Location stored in shared URL</div>
+            <div id="gps-stale-banner" class="gps-stale-banner hidden">
+              <span>⚠️ Location hasn't been updated in 30+ mins — click <strong>📍 Update GPS</strong> above!</span>
+            </div>
           </div>
 
           <div class="progress-track">
@@ -678,6 +747,9 @@
           </div>
           <div id="home-latest-msgs"></div>
         </section>
+
+        <!-- Dynamic URL Micro-Modules Container -->
+        <div id="home-micromodules-box"></div>
 
         <!-- Big Bottom Share CTA on Home -->
         <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
@@ -963,39 +1035,114 @@
     </div>
   </div>
 
-  <!-- MODULES & TRIP SETTINGS SHEET -->
+  <!-- SETTINGS, THEMES, MICRO-MODULES & BACKUPS SHEET -->
   <div id="sheet-modules" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="card-head">
-        <div class="card-title">Trip Modules &amp; Security</div>
+        <div class="card-title">⚙ Settings</div>
         <button class="subtle-pill-btn close-sheet-btn" type="button">Done</button>
       </div>
 
       <label class="field-label" for="settings-trip-title">Trip Name</label>
-      <div class="input-row" style="margin-bottom:14px;">
+      <div class="input-row" style="margin-bottom:16px;">
         <input id="settings-trip-title" class="input" type="text">
         <button id="settings-save-title-btn" class="btn btn-lime btn-sm" type="button">Save</button>
       </div>
 
-      <label class="field-label">Active Modules (Tap to Toggle)</label>
-      <div class="wiz-module-grid" id="settings-module-grid" style="margin-bottom:14px;"></div>
-
-      <label class="field-label" for="settings-password-input">URL Password Encryption (AES-256)</label>
-      <div class="input-row">
-        <input id="settings-password-input" class="input" type="password" placeholder="Leave blank for unencrypted link">
-        <button id="settings-save-password-btn" class="btn btn-purple btn-sm" type="button">Apply</button>
+      <label class="field-label">Visual Theme</label>
+      <div class="theme-picker-grid" id="theme-picker-grid" style="margin-bottom:16px;">
+        <button type="button" class="theme-chip active" data-theme="dark">🌙 Dark</button>
+        <button type="button" class="theme-chip" data-theme="light">☀️ Light</button>
+        <button type="button" class="theme-chip" data-theme="unicorn">🦄 Unicorn</button>
+        <button type="button" class="theme-chip" data-theme="win98">💾 98SE</button>
+        <button type="button" class="theme-chip" data-theme="brutalist">🧱 Brutalist</button>
       </div>
-      <div class="muted" style="margin-top:6px; font-size:0.76rem;" id="settings-enc-status"></div>
+
+      <label class="field-label">Active Core Modules (Tap to Toggle)</label>
+      <div class="wiz-module-grid" id="settings-module-grid" style="margin-bottom:16px;"></div>
+
+      <div style="margin-bottom:16px; padding-top:12px; border-top:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label class="field-label" style="margin:0;">🧩 URL Micro-Modules</label>
+          <button id="open-micromodule-creator-btn" class="btn btn-sm btn-lime" type="button">+ Add Micro-Module</button>
+        </div>
+        <div class="muted" style="font-size:0.78rem; margin-bottom:8px;">
+          Lightweight checklists, polls, pinned codes &amp; countdowns packed directly in the URL.
+        </div>
+        <div id="settings-micromodules-list"></div>
+      </div>
+
+      <div style="margin-bottom:16px; padding-top:12px; border-top:1px solid var(--border);">
+        <label class="field-label">🤖 AI Assistant Integration (Gemini / ChatGPT / Meta AI)</label>
+        <div class="muted" style="font-size:0.78rem; margin-bottom:8px;">
+          Copy a ready-made prompt + your current link so your AI can add a receipt image or stop and return the updated URL.
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm btn-purple copy-ai-recipe-btn">📋 Copy AI Prompt + Link</button>
+          <a href="./llms.txt" target="_blank" rel="noopener" class="btn btn-sm">View /llms.txt ↗</a>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px; padding-top:12px; border-top:1px solid var(--border);">
+        <label class="field-label" for="settings-password-input">URL Password Encryption (AES-256)</label>
+        <div class="input-row">
+          <input id="settings-password-input" class="input" type="password" placeholder="Leave blank for unencrypted link">
+          <button id="settings-save-password-btn" class="btn btn-purple btn-sm" type="button">Apply</button>
+        </div>
+        <div class="muted" style="margin-top:6px; font-size:0.76rem;" id="settings-enc-status"></div>
+      </div>
+
+      <div style="margin-bottom:16px; padding-top:12px; border-top:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label class="field-label" style="margin:0;">⏪ Saved System Backups</label>
+          <button id="settings-save-backup-now-btn" class="subtle-pill-btn" type="button">+ Save Snapshot</button>
+        </div>
+        <div id="settings-backups-list" class="backups-list"></div>
+      </div>
 
       <div class="sheet-who-footer" style="margin-top:18px;">
-        <button id="settings-restore-backup-btn" class="btn btn-purple hidden" type="button">⏪ Restore Pre-Merge Backup</button>
         <button id="settings-new-trip-btn" class="btn" type="button">+ Start New Trip</button>
-        <button id="settings-go-landing-btn" class="btn" type="button">Landing Page</button>
+        <button id="settings-go-landing-btn" class="btn" type="button">Landing Page &amp; Docs</button>
       </div>
       <div style="text-align:center; margin-top:14px; font-size:0.78rem;" class="muted">
         Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a>
       </div>
+    </div>
+  </div>
+
+  <!-- CREATE MICRO-MODULE SHEET -->
+  <div id="sheet-micromodule" class="sheet-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-head">
+        <div class="card-title">🧩 Add URL Micro-Module</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
+      </div>
+      <form id="micromodule-form">
+        <label class="field-label" for="mm-type">Micro-Module Type</label>
+        <select id="mm-type" class="input" style="margin-bottom:12px;">
+          <option value="checklist">📦 Shared Checklist (Packing / Todo items)</option>
+          <option value="kv">🔑 Pinned Codes &amp; Info (Wi-Fi, Gate Codes, Room #)</option>
+          <option value="poll">🍕 Quick Crew Poll (Vote on options)</option>
+          <option value="countdown">⏳ Event Countdown (Reservation / Tee Time / Flight)</option>
+        </select>
+
+        <label class="field-label" for="mm-title">Title</label>
+        <input id="mm-title" class="input" style="margin-bottom:12px;" type="text" placeholder="e.g. Airbnb &amp; Wi-Fi Codes, Packing List..." required>
+
+        <div id="mm-lines-wrap">
+          <label class="field-label" for="mm-lines" id="mm-lines-label">Items (one per line)</label>
+          <textarea id="mm-lines" class="input" rows="4" placeholder="Cooler &amp; Ice&#10;Dundie Trophies&#10;Bluetooth Speaker"></textarea>
+        </div>
+
+        <div id="mm-target-wrap" class="hidden" style="margin-top:10px;">
+          <label class="field-label" for="mm-target-time">Target Date &amp; Time</label>
+          <input id="mm-target-time" class="input" type="datetime-local">
+        </div>
+
+        <button class="btn btn-lime btn-full btn-lg" style="margin-top:14px;" type="submit">Add Micro-Module to URL</button>
+      </form>
     </div>
   </div>
 
@@ -1061,41 +1208,43 @@
     </div>
   </div>
 
-  <!-- ADD STOP SHEET -->
+  <!-- UNIFIED ROUTE, STOPS & DESTINATION MANAGER SHEET -->
   <div id="sheet-stop" class="sheet-backdrop hidden">
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="card-head">
-        <div class="card-title">Add a Stop</div>
-        <button class="subtle-pill-btn close-sheet-btn" type="button">Close</button>
+        <div class="card-title">📍 Route, Stops &amp; Destination</div>
+        <button class="subtle-pill-btn close-sheet-btn" type="button">Done</button>
       </div>
-      <div class="pit-grid">
-        <button class="pit-tile sheet-pit-chip" type="button" data-q="cafe"><span>☕</span> Coffee nearby</button>
-        <button class="pit-tile sheet-pit-chip" type="button" data-q="gas station"><span>⛽</span> Gas nearby</button>
-        <button class="pit-tile sheet-pit-chip" type="button" data-q="restaurant"><span>🍔</span> Food nearby</button>
-        <button class="pit-tile sheet-pit-chip" type="button" data-q="rest area"><span>🚻</span> Rest area</button>
-      </div>
-      <div class="input-row">
-        <input id="sheet-stop-input" class="input" type="text" placeholder="Or type any place or city...">
-        <button id="sheet-stop-btn" class="btn btn-lime" type="button">Find</button>
-      </div>
-      <div id="sheet-stop-results" class="search-results hidden"></div>
-    </div>
-  </div>
 
-  <!-- EDIT DESTINATION SHEET -->
-  <div id="sheet-dest" class="sheet-backdrop hidden">
-    <div class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="card-head">
-        <div class="card-title">Set Final Destination</div>
-        <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
+      <div style="margin-bottom:14px;">
+        <label class="field-label">Current Route &amp; Stops</label>
+        <div id="sheet-current-stops-list"></div>
       </div>
-      <div class="input-row">
-        <input id="sheet-dest-input" class="input" type="text" placeholder="Where is the crew heading?">
-        <button id="sheet-dest-btn" class="btn btn-lime" type="button">Search</button>
+
+      <div style="padding-top:12px; border-top:1px solid var(--border);">
+        <label class="field-label">Add a Pit Stop Along the Way</label>
+        <div class="pit-grid">
+          <button class="pit-tile sheet-pit-chip" type="button" data-q="cafe"><span>☕</span> Coffee nearby</button>
+          <button class="pit-tile sheet-pit-chip" type="button" data-q="gas station"><span>⛽</span> Gas nearby</button>
+          <button class="pit-tile sheet-pit-chip" type="button" data-q="restaurant"><span>🍔</span> Food nearby</button>
+          <button class="pit-tile sheet-pit-chip" type="button" data-q="rest area"><span>🚻</span> Rest area</button>
+        </div>
+        <div class="input-row">
+          <input id="sheet-stop-input" class="input" type="text" placeholder="Search any stop or city to add...">
+          <button id="sheet-stop-btn" class="btn btn-lime" type="button">+ Stop</button>
+        </div>
+        <div id="sheet-stop-results" class="search-results hidden"></div>
       </div>
-      <div id="sheet-dest-results" class="search-results hidden"></div>
+
+      <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+        <label class="field-label" for="sheet-dest-input">🏁 Change Final Destination</label>
+        <div class="input-row">
+          <input id="sheet-dest-input" class="input" type="text" placeholder="Search final destination...">
+          <button id="sheet-dest-btn" class="btn btn-purple" type="button">Set Dest</button>
+        </div>
+        <div id="sheet-dest-results" class="search-results hidden"></div>
+      </div>
     </div>
   </div>
 
