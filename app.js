@@ -510,7 +510,7 @@
     } else {
       document.documentElement.setAttribute('data-theme', currentTheme);
     }
-    document.querySelectorAll('#theme-picker-grid .theme-chip').forEach((btn) => {
+    document.querySelectorAll('.theme-chip[data-theme]').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.theme === currentTheme);
     });
   }
@@ -2307,7 +2307,7 @@
       ? '🔒 Currently encrypted with AES-256-GCM. Clear password and click Apply to switch to a standard link.'
       : '🔗 Currently using a standard unencrypted link. Enter a password and click Apply to encrypt.';
 
-    document.querySelectorAll('#theme-picker-grid .theme-chip').forEach((btn) => {
+    document.querySelectorAll('.theme-chip[data-theme]').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.theme === currentTheme);
     });
 
@@ -2559,8 +2559,8 @@
       showToast('Saved backup snapshot!');
     });
 
-    // Theme Picker
-    document.querySelectorAll('#theme-picker-grid .theme-chip').forEach((btn) => {
+    // Theme Picker (Home Page & Settings Sheet)
+    document.querySelectorAll('.theme-chip[data-theme]').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const th = btn.dataset.theme || 'dark';
         applyTheme(th);
