@@ -304,7 +304,7 @@
             kind: 'btn',
             label: '"+1 Soft Pretzel"',
             right: '"Add"',
-            action: 'state.snacks = state.snacks + 1',
+            action: 'set state.snacks = state.snacks + 1',
           },
           {
             id: 'b3',
@@ -372,12 +372,12 @@
             lines.push(`kv ${b.key || '"Key"'}, ${b.val || '"Value"'} copy=${b.copy ? 'true' : 'false'}`);
           } else if (b.kind === 'btn') {
             const right = b.right ? ` right=${b.right}` : '';
-            lines.push(`btn ${b.label || '"Action"'}${right} -> ${b.action || 'state.count = (state.count || 0) + 1'}`);
+            lines.push(`btn ${b.label || '"Action"'}${right} -> ${b.action || 'set state.count = (state.count || 0) + 1'}`);
           } else if (b.kind === 'check') {
             const v = (b.varName || `done_${idx}`).replace(/[^a-zA-Z0-9_]/g, '');
             data[v] = Boolean(b.done);
             lines.push(`state ${v} = ${b.done ? 'true' : 'false'}`);
-            lines.push(`check ${b.label || '"Checklist item"'}, state.${v} -> state.${v} = !state.${v}`);
+            lines.push(`check ${b.label || '"Checklist item"'}, state.${v} -> set state.${v} = !state.${v}`);
           } else if (b.kind === 'progress') {
             lines.push(`progress ${b.expr || '50'}`);
           } else if (b.kind === 'pin') {
@@ -692,7 +692,7 @@
         countdown: () => ({ id: 'b' + Date.now(), kind: 'countdown', label: 'Party Starts', iso: '2026-12-25T11:11', varName: 'target' }),
         big: () => ({ id: 'b' + Date.now(), kind: 'big', varName: '', initVal: '', text: '"420 mi"', sub: '"Distance Covered"', badge: '"ON TRACK"' }),
         kv: () => ({ id: 'b' + Date.now(), kind: 'kv', key: '"Wi-Fi Password"', val: '"BearsBeets123"', copy: true }),
-        btn: () => ({ id: 'b' + Date.now(), kind: 'btn', label: '"+1 Pit Stop"', right: '"Tap"', action: 'state.snacks = (state.snacks || 0) + 1' }),
+        btn: () => ({ id: 'b' + Date.now(), kind: 'btn', label: '"+1 Pit Stop"', right: '"Tap"', action: 'set state.snacks = (state.snacks || 0) + 1' }),
         check: () => ({ id: 'b' + Date.now(), kind: 'check', label: '"Cooler Packed"', varName: 'packed_' + Math.floor(Math.random() * 100), done: false }),
         progress: () => ({ id: 'b' + Date.now(), kind: 'progress', expr: '65' }),
         pin: () => ({ id: 'b' + Date.now(), kind: 'pin', label: '"Parking Spot B4"', lat: '41.40897', lon: '-75.66241', note: '"Near East Gate"' }),
