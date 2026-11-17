@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Micro-Module WYSIWYG Card Creator — Dangerous.Business</title>
+  <meta name="description" content="Visual WYSIWYG Micro-Module Card Creator for Dangerous.Business. Build interactive DB-Script cards, preview live, export &ai= URLs, and browse 12 ready-to-use examples.">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css?v=12">
+  <style>
+    .studio-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 920px) {
+      .studio-grid { grid-template-columns: 1fr; }
+    }
+    .studio-palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 8px;
+    }
+    .studio-block-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .studio-block-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .studio-block-type {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--lime);
+    }
+    .studio-block-fields {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 600px) {
+      .studio-block-fields { grid-template-columns: 1fr; }
+    }
+    .studio-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .studio-field.full { grid-column: 1 / -1; }
+    .studio-field label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .studio-field input, .studio-field select, .studio-field textarea {
+      width: 100%;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 0.84rem;
+    }
+    .studio-code-box {
+      width: 100%;
+      min-height: 170px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.45;
+      resize: vertical;
+    }
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 860px) {
+      .examples-grid { grid-template-columns: 1fr; }
+    }
+    .example-lib-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .studio-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface-3);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      z-index: 9999;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+    .studio-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="landing-view">
+    <header class="landing-nav">
+      <a href="./" class="brand-lockup">
+        <svg class="brand-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="60" height="60" rx="18" fill="#141622" stroke="rgba(255,255,255,0.16)" stroke-width="2"/>
+          <path d="M16 47 C16 31 46 37 47 18" stroke="#C8FF3D" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="16" cy="47" r="4.5" fill="#9D7BFF"/>
+          <circle cx="47" cy="18" r="6" fill="#C8FF3D"/>
+        </svg>
+        <div>
+          <div class="brand-name">Dangerous.Business</div>
+          <div class="brand-tag">WYSIWYG CARD CREATOR</div>
+        </div>
+      </a>
+
+      <nav class="landing-links" aria-label="Studio Navigation">
+        <a href="./">Home</a>
+        <a href="./docs.html">Documentation</a>
+        <a href="#examples-library">12 Examples</a>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <a href="./docs.html" class="btn btn-sm btn-ghost">📚 Docs</a>
+        <a href="./" class="btn btn-sm btn-lime">Open App →</a>
+      </div>
+    </header>
+
+    <section class="landing-section" style="padding-top:28px;">
+      <div class="section-header" style="margin-bottom:22px;">
+        <div class="section-eyebrow">NO-CODE BUILDER + TURING-COMPLETE DB-SCRIPT</div>
+        <h2>Micro-Module WYSIWYG Card Creator</h2>
+        <p>Assemble visual blocks on the left, test the live interactive card on the right, and export straight to your roadtrip URL or <code>&amp;ai=</code> agent patch.</p>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:14px;">
+          <button type="button" class="subtle-pill-btn theme-switch-btn" data-theme="dark">🌑 Dark</button>
+          <button type="button" class="subtle-pill-btn theme-switch-btn" data-theme="light">☀️ Light</button>
+          <button type="button" class="subtle-pill-btn theme-switch-btn" data-theme="unicorn">🦄 Unicorn</button>
+          <button type="button" class="subtle-pill-btn theme-switch-btn" data-theme="win98">💾 98SE</button>
+          <button type="button" class="subtle-pill-btn theme-switch-btn" data-theme="brutalist">🟨 Brutalist</button>
+        </div>
+      </div>
+
+      <div class="studio-grid">
+        <!-- LEFT: WYSIWYG BUILDER -->
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+            <h3 style="margin:0;">1. Build Your Card</h3>
+            <div style="display:flex; gap:6px;">
+              <button type="button" id="mode-visual-btn" class="btn btn-sm btn-lime">🧩 Visual Blocks</button>
+              <button type="button" id="mode-code-btn" class="btn btn-sm btn-ghost">⚡ Raw DB-Script</button>
+            </div>
+          </div>
+
+          <div class="studio-block-fields" style="margin-bottom:14px;">
+            <div class="studio-field">
+              <label for="card-title-input">Card Title</label>
+              <input id="card-title-input" type="text" value="Roadtrip Snack Counter" placeholder="e.g. Gate Codes">
+            </div>
+            <div class="studio-field">
+              <label for="card-icon-input">Card Icon (Emoji)</label>
+              <input id="card-icon-input" type="text" value="🥨" placeholder="e.g. 🔑">
+            </div>
+          </div>
+
+          <div id="visual-editor-pane">
+            <div style="margin-bottom:14px;">
+              <div class="muted" style="font-size:0.78rem; font-weight:700;">Add a Block to Your Card:</div>
+              <div class="studio-palette">
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="countdown">⏳ Countdown / Elapsed</button>
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="big">📣 Big Metric</button>
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="kv">🔑 Key-Value Row</button>
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="btn">🔘 Action Button</button>
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="check">☑️ Checklist Item</button>
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="progress">📊 Progress Bar</button>
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="pin">🅿️ GPS Pin</button>
+                <button type="button" class="subtle-pill-btn add-block-btn" data-kind="text">📝 Text Note</button>
+              </div>
+            </div>
+
+            <div id="blocks-container"></div>
+          </div>
+
+          <div id="raw-editor-pane" class="hidden">
+            <div class="studio-field" style="margin-bottom:12px;">
+              <label for="raw-code-textarea">DB-Script Source (<code>mm.code</code>)</label>
+              <textarea id="raw-code-textarea" class="studio-code-box" spellcheck="false"></textarea>
+            </div>
+            <div class="studio-field" style="margin-bottom:12px;">
+              <label for="raw-data-textarea">Initial JSON State (<code>mm.data</code>)</label>
+              <textarea id="raw-data-textarea" class="studio-code-box" style="min-height:110px;" spellcheck="false"></textarea>
+            </div>
+            <button type="button" id="apply-raw-btn" class="btn btn-sm btn-purple">▶ Run Raw Script in Preview</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: LIVE PREVIEW & EXPORT -->
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px;">
+              <h3 style="margin:0;">2. Live Interactive Preview</h3>
+              <span class="share-enc-badge">DB-Script VM</span>
+            </div>
+            <div id="live-preview-card" class="card" style="background:var(--surface-2); margin-bottom:14px;"></div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+              <button type="button" id="add-active-trip-btn" class="btn btn-lime">➕ Add to Active Trip</button>
+              <button type="button" id="launch-new-trip-btn" class="btn btn-purple">🚀 Launch as New Trip</button>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <button type="button" id="copy-code-btn" class="btn btn-sm btn-ghost">📋 Copy DB-Script</button>
+              <button type="button" id="copy-ai-url-btn" class="btn btn-sm btn-ghost">🤖 Copy &amp;ai= URL</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom:8px;">Generated Code &amp; JSON</h3>
+            <div class="studio-field" style="margin-bottom:10px;">
+              <label for="generated-code-out">Generated <code>DB-Script</code></label>
+              <textarea id="generated-code-out" class="studio-code-box" style="min-height:125px;" readonly></textarea>
+            </div>
+            <div class="studio-field">
+              <label for="generated-ai-out">Ready-to-Send <code>&amp;ai=</code> Patch URL</label>
+              <textarea id="generated-ai-out" class="studio-code-box" style="min-height:76px;" readonly></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12-EXAMPLE LIBRARY -->
+    <section id="examples-library" class="landing-section">
+      <div class="section-header">
+        <div class="section-eyebrow">12 READY-TO-LOAD TEMPLATES</div>
+        <h2>Micro-Module Example Library</h2>
+        <p>Click any example to load it into the WYSIWYG Studio &amp; Raw DB-Script VM, customize it, or inject it straight into your trip.</p>
+      </div>
+      <div id="studio-examples-grid" class="examples-grid"></div>
+    </section>
+
+    <footer class="landing-footer">
+      <p>Built by <a href="https://shangle.me" target="_blank" rel="noopener">shangle.me</a> • <a href="./">Home</a> • <a href="./docs.html">Documentation</a></p>
+    </footer>
+  </div>
+
+  <div id="studio-toast" class="studio-toast" role="status" aria-live="polite"></div>
+
+  <script src="./db-script.js?v=12"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const { esc, runDbScript, renderDbNodes, EXAMPLES } = window.DBScript;
+      const STORAGE_LAST_TRIP_KEY = 'db_last_trip_state_v4';
+
+      const studioState = {
+        mode: 'visual', // 'visual' | 'raw'
+        title: 'Roadtrip Snack Counter',
+        icon: '🥨',
+        blocks: [
+          {
+            id: 'b1',
+            kind: 'big',
+            varName: 'snacks',
+            initVal: '3',
+            text: '"Pretzels Eaten: " + state.snacks',
+            sub: '"Dunder Mifflin Roadtrip Fuel"',
+            badge: '"LIVE COUNTER"',
+          },
+          {
+            id: 'b2',
+            kind: 'btn',
+            label: '"+1 Soft Pretzel"',
+            right: '"Add"',
+            action: 'state.snacks = state.snacks + 1',
+          },
+          {
+            id: 'b3',
+            kind: 'progress',
+            expr: '(state.snacks / 10) * 100',
+          },
+        ],
+        rawCode: '',
+        rawData: {},
+      };
+
+      const titleInput = document.getElementById('card-title-input');
+      const iconInput = document.getElementById('card-icon-input');
+      const blocksContainer = document.getElementById('blocks-container');
+      const visualPane = document.getElementById('visual-editor-pane');
+      const rawPane = document.getElementById('raw-editor-pane');
+      const rawCodeArea = document.getElementById('raw-code-textarea');
+      const rawDataArea = document.getElementById('raw-data-textarea');
+      const livePreviewCard = document.getElementById('live-preview-card');
+      const genCodeOut = document.getElementById('generated-code-out');
+      const genAiOut = document.getElementById('generated-ai-out');
+      const toastEl = document.getElementById('studio-toast');
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => toastEl.classList.remove('show'), 2200);
+      }
+
+      // Theme switching
+      document.querySelectorAll('.theme-switch-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.documentElement.setAttribute('data-theme', btn.dataset.theme);
+          showToast(`Theme switched to ${btn.dataset.theme}`);
+        });
+      });
+
+      function compileBlocksToScript() {
+        const lines = [];
+        const data = {};
+        studioState.blocks.forEach((b, idx) => {
+          if (b.kind === 'countdown') {
+            const v = (b.varName || `target_${idx}`).replace(/[^a-zA-Z0-9_]/g, '');
+            const iso = b.iso || '2026-12-25T11:11';
+            const lbl = b.label || 'Event';
+            data[v] = iso;
+            lines.push(`state ${v} = ${JSON.stringify(iso)}`);
+            lines.push(`let td_${v} = timeDiff(state.${v})`);
+            lines.push(`big td_${v}.text sub=(${JSON.stringify(lbl + ' • ')} + td_${v}.formattedDate) badge=td_${v}.badge`);
+          } else if (b.kind === 'big') {
+            if (b.varName) {
+              const v = b.varName.replace(/[^a-zA-Z0-9_]/g, '');
+              const parsed = Number.isFinite(Number(b.initVal)) && b.initVal !== '' ? Number(b.initVal) : b.initVal;
+              if (!(v in data)) {
+                data[v] = parsed;
+                lines.push(`state ${v} = ${JSON.stringify(parsed)}`);
+              }
+            }
+            const t = b.text || '"Metric"';
+            const s = b.sub ? ` sub=${b.sub}` : '';
+            const bg = b.badge ? ` badge=${b.badge}` : '';
+            lines.push(`big ${t}${s}${bg}`);
+          } else if (b.kind === 'kv') {
+            lines.push(`kv ${b.key || '"Key"'}, ${b.val || '"Value"'} copy=${b.copy ? 'true' : 'false'}`);
+          } else if (b.kind === 'btn') {
+            const right = b.right ? ` right=${b.right}` : '';
+            lines.push(`btn ${b.label || '"Action"'}${right} -> ${b.action || 'state.count = (state.count || 0) + 1'}`);
+          } else if (b.kind === 'check') {
+            const v = (b.varName || `done_${idx}`).replace(/[^a-zA-Z0-9_]/g, '');
+            data[v] = Boolean(b.done);
+            lines.push(`state ${v} = ${b.done ? 'true' : 'false'}`);
+            lines.push(`check ${b.label || '"Checklist item"'}, state.${v} -> state.${v} = !state.${v}`);
+          } else if (b.kind === 'progress') {
+            lines.push(`progress ${b.expr || '50'}`);
+          } else if (b.kind === 'pin') {
+            const lat = Number(b.lat || 41.40897);
+            const lon = Number(b.lon || -75.66241);
+            const note = b.note ? ` note=${b.note}` : '';
+            lines.push(`pin ${b.label || '"Meeting Spot"'}, ${lat}, ${lon}${note}`);
+          } else if (b.kind === 'text') {
+            lines.push(`text ${b.text || '"Note"'}${b.muted ? ' muted=true' : ''}`);
+          }
+        });
+        return { code: lines.join('\n'), data };
+      }
+
+      function getCurrentModule() {
+        if (studioState.mode === 'visual') {
+          const compiled = compileBlocksToScript();
+          // Preserve interactive mutations in rawData if keys match
+          const mergedData = { ...compiled.data, ...studioState.rawData };
+          Object.keys(mergedData).forEach((k) => {
+            if (!(k in compiled.data)) delete mergedData[k];
+          });
+          studioState.rawCode = compiled.code;
+          studioState.rawData = mergedData;
+          rawCodeArea.value = studioState.rawCode;
+          rawDataArea.value = JSON.stringify(studioState.rawData, null, 2);
+        }
+        return {
+          id: 'mm_studio_' + Date.now().toString(36),
+          type: 'script',
+          title: studioState.title || 'Custom Micro-Module',
+          icon: studioState.icon || '🧩',
+          code: studioState.rawCode,
+          data: studioState.rawData,
+        };
+      }
+
+      function buildAiPatchUrl(mm) {
+        const patch = {
+          addMicroModule: {
+            type: 'script',
+            title: mm.title,
+            icon: mm.icon,
+            code: mm.code,
+            data: mm.data,
+          },
+        };
+        const base = new URL('./', window.location.href).href;
+        return `${base}#ai=${encodeURIComponent(JSON.stringify(patch))}`;
+      }
+
+      function renderPreview() {
+        const mm = getCurrentModule();
+        genCodeOut.value = mm.code;
+        genAiOut.value = buildAiPatchUrl(mm);
+
+        const { vm, env } = runDbScript(mm, {
+          user: 'Michael',
+          crew: ['Michael', 'Dwight', 'Jim', 'Pam'],
+          trip: {
+            title: 'Party at Dunder Mifflin',
+            spent: 276,
+            where: 'On I-81 N • Near Scranton, PA',
+            lat: 41.40897,
+            lon: -75.66241,
+            speed: 62,
+          },
+        });
+
+        livePreviewCard.innerHTML = `
+          <div class="mm-card-head" style="margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.25rem;">${esc(mm.icon)}</span>
+              <strong style="font-size:1rem;">${esc(mm.title)}</strong>
+            </div>
+            <span class="badge badge-purple">Preview</span>
+          </div>
+        `;
+        const body = document.createElement('div');
+        body.appendChild(renderDbNodes(vm.nodes, mm, env, vm, {
+          onChange: (msg) => {
+            studioState.rawData = mm.data;
+            if (studioState.mode === 'raw') {
+              rawDataArea.value = JSON.stringify(mm.data, null, 2);
+            }
+            renderPreview();
+            if (msg) showToast(msg);
+          },
+          onToast: showToast,
+          getLocation: () => ({ lat: 41.40897, lon: -75.66241 }),
+        }));
+        livePreviewCard.appendChild(body);
+      }
+
+      const BLOCK_LABELS = {
+        countdown: '⏳ Countdown / Elapsed',
+        big: '📣 Big Metric',
+        kv: '🔑 Key-Value Row',
+        btn: '🔘 Action Button',
+        check: '☑️ Checklist Item',
+        progress: '📊 Progress Bar',
+        pin: '🅿️ GPS Pin',
+        text: '📝 Text Note',
+      };
+
+      function renderBlocksEditor() {
+        if (!studioState.blocks.length) {
+          blocksContainer.innerHTML = '<div class="muted" style="padding:14px; text-align:center;">No blocks yet. Click any block button above to add one!</div>';
+          return;
+        }
+        blocksContainer.innerHTML = studioState.blocks.map((b, idx) => {
+          let fieldsHtml = '';
+          if (b.kind === 'countdown') {
+            fieldsHtml = `
+              <div class="studio-field">
+                <label for="f-${b.id}-lbl">Event Label</label>
+                <input id="f-${b.id}-lbl" data-idx="${idx}" data-prop="label" value="${esc(b.label || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-iso">Target Date/Time (ISO)</label>
+                <input id="f-${b.id}-iso" data-idx="${idx}" data-prop="iso" value="${esc(b.iso || '')}" placeholder="2026-12-25T11:11">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-var">State Variable</label>
+                <input id="f-${b.id}-var" data-idx="${idx}" data-prop="varName" value="${esc(b.varName || '')}">
+              </div>
+            `;
+          } else if (b.kind === 'big') {
+            fieldsHtml = `
+              <div class="studio-field">
+                <label for="f-${b.id}-txt">Headline Expression</label>
+                <input id="f-${b.id}-txt" data-idx="${idx}" data-prop="text" value="${esc(b.text || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-sub">Subtitle Expression</label>
+                <input id="f-${b.id}-sub" data-idx="${idx}" data-prop="sub" value="${esc(b.sub || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-bdg">Badge Expression</label>
+                <input id="f-${b.id}-bdg" data-idx="${idx}" data-prop="badge" value="${esc(b.badge || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-var">Optional State Var (name / init)</label>
+                <div style="display:flex; gap:6px;">
+                  <input id="f-${b.id}-var" aria-label="State variable name" data-idx="${idx}" data-prop="varName" value="${esc(b.varName || '')}" placeholder="var">
+                  <input aria-label="Initial value" data-idx="${idx}" data-prop="initVal" value="${esc(b.initVal ?? '')}" placeholder="0" style="max-width:72px;">
+                </div>
+              </div>
+            `;
+          } else if (b.kind === 'kv') {
+            fieldsHtml = `
+              <div class="studio-field">
+                <label for="f-${b.id}-k">Key Expression</label>
+                <input id="f-${b.id}-k" data-idx="${idx}" data-prop="key" value="${esc(b.key || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-v">Value Expression</label>
+                <input id="f-${b.id}-v" data-idx="${idx}" data-prop="val" value="${esc(b.val || '')}">
+              </div>
+            `;
+          } else if (b.kind === 'btn') {
+            fieldsHtml = `
+              <div class="studio-field">
+                <label for="f-${b.id}-bl">Button Label</label>
+                <input id="f-${b.id}-bl" data-idx="${idx}" data-prop="label" value="${esc(b.label || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-br">Right Badge</label>
+                <input id="f-${b.id}-br" data-idx="${idx}" data-prop="right" value="${esc(b.right || '')}">
+              </div>
+              <div class="studio-field full">
+                <label for="f-${b.id}-ba">On Click Action (DB-Script)</label>
+                <input id="f-${b.id}-ba" data-idx="${idx}" data-prop="action" value="${esc(b.action || '')}">
+              </div>
+            `;
+          } else if (b.kind === 'check') {
+            fieldsHtml = `
+              <div class="studio-field">
+                <label for="f-${b.id}-cl">Checklist Label</label>
+                <input id="f-${b.id}-cl" data-idx="${idx}" data-prop="label" value="${esc(b.label || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-cv">State Variable</label>
+                <input id="f-${b.id}-cv" data-idx="${idx}" data-prop="varName" value="${esc(b.varName || '')}">
+              </div>
+            `;
+          } else if (b.kind === 'progress') {
+            fieldsHtml = `
+              <div class="studio-field full">
+                <label for="f-${b.id}-pe">Percentage Expression (0–100)</label>
+                <input id="f-${b.id}-pe" data-idx="${idx}" data-prop="expr" value="${esc(b.expr || '')}">
+              </div>
+            `;
+          } else if (b.kind === 'pin') {
+            fieldsHtml = `
+              <div class="studio-field">
+                <label for="f-${b.id}-pl">Pin Label</label>
+                <input id="f-${b.id}-pl" data-idx="${idx}" data-prop="label" value="${esc(b.label || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-pn">Note</label>
+                <input id="f-${b.id}-pn" data-idx="${idx}" data-prop="note" value="${esc(b.note || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-plat">Latitude</label>
+                <input id="f-${b.id}-plat" data-idx="${idx}" data-prop="lat" value="${esc(b.lat || '')}">
+              </div>
+              <div class="studio-field">
+                <label for="f-${b.id}-plon">Longitude</label>
+                <input id="f-${b.id}-plon" data-idx="${idx}" data-prop="lon" value="${esc(b.lon || '')}">
+              </div>
+            `;
+          } else if (b.kind === 'text') {
+            fieldsHtml = `
+              <div class="studio-field full">
+                <label for="f-${b.id}-tx">Text Expression</label>
+                <input id="f-${b.id}-tx" data-idx="${idx}" data-prop="text" value="${esc(b.text || '')}">
+              </div>
+            `;
+          }
+
+          return `
+            <div class="studio-block-card">
+              <div class="studio-block-head">
+                <span class="studio-block-type">${BLOCK_LABELS[b.kind] || b.kind}</span>
+                <div style="display:flex; gap:4px;">
+                  <button type="button" class="subtle-pill-btn move-up-btn" data-idx="${idx}" aria-label="Move block up">↑</button>
+                  <button type="button" class="subtle-pill-btn move-dn-btn" data-idx="${idx}" aria-label="Move block down">↓</button>
+                  <button type="button" class="subtle-pill-btn del-blk-btn" data-idx="${idx}" aria-label="Delete block">✕</button>
+                </div>
+              </div>
+              <div class="studio-block-fields">${fieldsHtml}</div>
+            </div>
+          `;
+        }).join('');
+
+        blocksContainer.querySelectorAll('input[data-prop]').forEach((inp) => {
+          inp.addEventListener('input', () => {
+            const idx = Number(inp.dataset.idx);
+            const prop = inp.dataset.prop;
+            studioState.blocks[idx][prop] = inp.value;
+            studioState.rawData = {};
+            renderPreview();
+          });
+        });
+
+        blocksContainer.querySelectorAll('.move-up-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const idx = Number(btn.dataset.idx);
+            if (idx > 0) {
+              [studioState.blocks[idx - 1], studioState.blocks[idx]] = [studioState.blocks[idx], studioState.blocks[idx - 1]];
+              renderBlocksEditor();
+              renderPreview();
+            }
+          });
+        });
+
+        blocksContainer.querySelectorAll('.move-dn-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const idx = Number(btn.dataset.idx);
+            if (idx < studioState.blocks.length - 1) {
+              [studioState.blocks[idx + 1], studioState.blocks[idx]] = [studioState.blocks[idx], studioState.blocks[idx + 1]];
+              renderBlocksEditor();
+              renderPreview();
+            }
+          });
+        });
+
+        blocksContainer.querySelectorAll('.del-blk-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            studioState.blocks.splice(Number(btn.dataset.idx), 1);
+            renderBlocksEditor();
+            renderPreview();
+          });
+        });
+      }
+
+      function setMode(mode) {
+        studioState.mode = mode;
+        const isVisual = mode === 'visual';
+        visualPane.classList.toggle('hidden', !isVisual);
+        rawPane.classList.toggle('hidden', isVisual);
+        document.getElementById('mode-visual-btn').className = `btn btn-sm ${isVisual ? 'btn-lime' : 'btn-ghost'}`;
+        document.getElementById('mode-code-btn').className = `btn btn-sm ${!isVisual ? 'btn-lime' : 'btn-ghost'}`;
+        if (!isVisual) {
+          rawCodeArea.value = studioState.rawCode;
+          rawDataArea.value = JSON.stringify(studioState.rawData, null, 2);
+        }
+      }
+
+      document.getElementById('mode-visual-btn').addEventListener('click', () => {
+        setMode('visual');
+        renderPreview();
+      });
+      document.getElementById('mode-code-btn').addEventListener('click', () => {
+        getCurrentModule();
+        setMode('raw');
+      });
+
+      document.getElementById('apply-raw-btn').addEventListener('click', () => {
+        studioState.rawCode = rawCodeArea.value;
+        try {
+          studioState.rawData = JSON.parse(rawDataArea.value || '{}');
+          renderPreview();
+          showToast('Raw DB-Script executed!');
+        } catch (err) {
+          showToast('Invalid JSON in mm.data');
+        }
+      });
+
+      const BLOCK_DEFAULTS = {
+        countdown: () => ({ id: 'b' + Date.now(), kind: 'countdown', label: 'Party Starts', iso: '2026-12-25T11:11', varName: 'target' }),
+        big: () => ({ id: 'b' + Date.now(), kind: 'big', varName: '', initVal: '', text: '"420 mi"', sub: '"Distance Covered"', badge: '"ON TRACK"' }),
+        kv: () => ({ id: 'b' + Date.now(), kind: 'kv', key: '"Wi-Fi Password"', val: '"BearsBeets123"', copy: true }),
+        btn: () => ({ id: 'b' + Date.now(), kind: 'btn', label: '"+1 Pit Stop"', right: '"Tap"', action: 'state.snacks = (state.snacks || 0) + 1' }),
+        check: () => ({ id: 'b' + Date.now(), kind: 'check', label: '"Cooler Packed"', varName: 'packed_' + Math.floor(Math.random() * 100), done: false }),
+        progress: () => ({ id: 'b' + Date.now(), kind: 'progress', expr: '65' }),
+        pin: () => ({ id: 'b' + Date.now(), kind: 'pin', label: '"Parking Spot B4"', lat: '41.40897', lon: '-75.66241', note: '"Near East Gate"' }),
+        text: () => ({ id: 'b' + Date.now(), kind: 'text', text: '"Remember to bring ice!"', muted: true }),
+      };
+
+      document.querySelectorAll('.add-block-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const factory = BLOCK_DEFAULTS[btn.dataset.kind];
+          if (!factory) return;
+          studioState.blocks.push(factory());
+          renderBlocksEditor();
+          renderPreview();
+          showToast(`Added ${btn.textContent.trim()}`);
+        });
+      });
+
+      titleInput.addEventListener('input', () => {
+        studioState.title = titleInput.value;
+        renderPreview();
+      });
+      iconInput.addEventListener('input', () => {
+        studioState.icon = iconInput.value;
+        renderPreview();
+      });
+
+      document.getElementById('copy-code-btn').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(genCodeOut.value);
+          showToast('Copied DB-Script!');
+        } catch {}
+      });
+
+      document.getElementById('copy-ai-url-btn').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(genAiOut.value);
+          showToast('Copied &ai= URL!');
+        } catch {}
+      });
+
+      document.getElementById('launch-new-trip-btn').addEventListener('click', () => {
+        window.location.href = genAiOut.value;
+      });
+
+      document.getElementById('add-active-trip-btn').addEventListener('click', () => {
+        const mm = getCurrentModule();
+        const patch = {
+          addMicroModule: {
+            type: 'script',
+            title: mm.title,
+            icon: mm.icon,
+            code: mm.code,
+            data: mm.data,
+          },
+        };
+        const aiParam = encodeURIComponent(JSON.stringify(patch));
+        const savedState = localStorage.getItem(STORAGE_LAST_TRIP_KEY);
+        if (savedState && savedState.trim()) {
+          window.location.href = `./#s=${savedState}&ai=${aiParam}`;
+        } else {
+          window.location.href = `./#ai=${aiParam}`;
+        }
+      });
+
+      function loadExample(ex) {
+        studioState.title = ex.title;
+        studioState.icon = ex.icon;
+        studioState.rawCode = ex.code;
+        studioState.rawData = JSON.parse(JSON.stringify(ex.data || {}));
+        titleInput.value = ex.title;
+        iconInput.value = ex.icon;
+        setMode('raw');
+        renderPreview();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast(`Loaded "${ex.title}"`);
+      }
+
+      // Render 12-Example Library
+      const exGrid = document.getElementById('studio-examples-grid');
+      if (exGrid && Array.isArray(EXAMPLES)) {
+        exGrid.innerHTML = EXAMPLES.map((ex) => `
+          <div class="card example-lib-card">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                <span style="font-size:1.5rem;">${esc(ex.icon)}</span>
+                <span class="badge badge-purple">${esc(ex.category)}</span>
+              </div>
+              <h3 style="margin-bottom:6px;">${esc(ex.title)}</h3>
+              <p class="muted" style="font-size:0.86rem; line-height:1.45;">${esc(ex.summary)}</p>
+            </div>
+            <button type="button" class="btn btn-sm btn-lime load-ex-btn" data-id="${esc(ex.id)}">Load into Studio ↑</button>
+          </div>
+        `).join('');
+
+        exGrid.querySelectorAll('.load-ex-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const ex = EXAMPLES.find((item) => item.id === btn.dataset.id);
+            if (ex) loadExample(ex);
+          });
+        });
+      }
+
+      // Check ?example=<id> on load
+      const urlParams = new URLSearchParams(window.location.search);
+      const exId = urlParams.get('example');
+      const matched = exId && Array.isArray(EXAMPLES) ? EXAMPLES.find((e) => e.id === exId) : null;
+      renderBlocksEditor();
+      if (matched) {
+        loadExample(matched);
+      } else {
+        renderPreview();
+      }
+    })();
+  </script>
+</body>
+</html>

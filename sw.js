@@ -1,10 +1,13 @@
 'use strict';
 
-const CACHE_NAME = 'roadtrip-shell-v11';
+const CACHE_NAME = 'roadtrip-shell-v12';
 const SHELL_URLS = [
   './',
   './index.html',
+  './docs.html',
+  './studio.html',
   './styles.css',
+  './db-script.js',
   './app.js',
   './tripsplitter.html',
   './manifest.webmanifest',

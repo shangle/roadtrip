@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./styles.css?v=11">
+  <link rel="stylesheet" href="./styles.css?v=12">
 </head>
 <body>
   <div class="ambient-glow"></div>
@@ -48,11 +48,11 @@
         </div>
       </a>
 
-      <nav class="landing-links">
+      <nav class="landing-links" aria-label="Primary Navigation">
         <a href="#how-it-works">How It Works</a>
         <a href="#modules-sec">Modules</a>
-        <a href="#docs-sec">AI &amp; Docs</a>
-        <a href="#use-cases">Use Cases</a>
+        <a href="./docs.html">Documentation</a>
+        <a href="./studio.html">Card Creator</a>
       </nav>
 
       <div class="landing-nav-actions">
@@ -294,6 +294,11 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
           <p>Open <strong>⚙ Settings</strong> inside any trip to switch between <strong>🌙 Dark Tactical</strong>, <strong>☀️ Daylight Crisp</strong>, <strong>🦄 Unicorn Sparkle</strong>, <strong>💾 Windows 98 SE</strong>, and <strong>🧱 Raw Brutalist</strong>.</p>
         </div>
       </div>
+
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:24px;">
+        <a href="./docs.html" class="btn btn-lime">📚 Read Full Documentation (docs.html) →</a>
+        <a href="./studio.html" class="btn btn-purple">🧩 Open WYSIWYG Card Creator (studio.html) →</a>
+      </div>
     </section>
 
     <!-- BOTTOM CTA -->
@@ -308,7 +313,9 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
 
     <footer class="landing-footer">
       <div><strong>Dangerous.Business</strong> — 100% Client-Side • URL-Driven • Web Crypto AES-256-GCM</div>
-      <div style="margin-top:8px;">Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a></div>
+      <div style="margin-top:8px;">
+        <a href="./docs.html">Documentation</a> • <a href="./studio.html">WYSIWYG Card Creator</a> • Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a>
+      </div>
     </footer>
   </div>
 
@@ -1091,9 +1098,12 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
       <div class="wiz-module-grid" id="settings-module-grid" style="margin-bottom:16px;"></div>
 
       <div style="margin-bottom:16px; padding-top:12px; border-top:1px solid var(--border);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
           <label class="field-label" style="margin:0;">🧩 URL Micro-Modules</label>
-          <button id="open-micromodule-creator-btn" class="btn btn-sm btn-lime" type="button">+ Add Micro-Module</button>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <a href="./studio.html" class="btn btn-sm btn-purple">🎨 WYSIWYG Studio ↗</a>
+            <button id="open-micromodule-creator-btn" class="btn btn-sm btn-lime" type="button">+ Quick Add</button>
+          </div>
         </div>
         <div class="muted" style="font-size:0.78rem; margin-bottom:8px;">
           Lightweight checklists, polls, pinned codes &amp; countdowns packed directly in the URL.
@@ -1145,7 +1155,10 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
       <div class="sheet-handle"></div>
       <div class="card-head">
         <div class="card-title" id="mm-sheet-heading">🧩 URL Micro-Module &amp; DB-Script Studio</div>
-        <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <a href="./studio.html" class="subtle-pill-btn">Full WYSIWYG Studio ↗</a>
+          <button class="subtle-pill-btn close-sheet-btn" type="button">Cancel</button>
+        </div>
       </div>
       <form id="micromodule-form">
         <input type="hidden" id="mm-edit-id" value="">
@@ -1388,6 +1401,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./app.js?v=11"></script>
+  <script src="./db-script.js?v=12"></script>
+  <script src="./app.js?v=12"></script>
 </body>
 </html>

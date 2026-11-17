@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Documentation — Dangerous.Business</title>
+  <meta name="description" content="Complete documentation for Dangerous.Business: URL state protocol (#s=, #e=, &ai=), AI Agent integration, Turing-complete DB-Script reference, and 12 micro-module examples.">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css?v=12">
+  <style>
+    .docs-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .docs-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    @media (max-width: 860px) {
+      .docs-grid-2, .docs-grid-3 { grid-template-columns: 1fr; }
+    }
+    .docs-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.86rem; }
+    .docs-table th, .docs-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .docs-table th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .example-lib-card { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+    .docs-toc { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow-2"></div>
+
+  <div class="landing-view">
+    <header class="landing-nav">
+      <a href="./" class="brand-lockup">
+        <svg class="brand-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="60" height="60" rx="18" fill="#141622" stroke="rgba(255,255,255,0.16)" stroke-width="2"/>
+          <path d="M16 47 C16 31 46 37 47 18" stroke="#C8FF3D" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="16" cy="47" r="4.5" fill="#9D7BFF"/>
+          <circle cx="47" cy="18" r="6" fill="#C8FF3D"/>
+        </svg>
+        <div>
+          <div class="brand-name">Dangerous.Business</div>
+          <div class="brand-tag">DOCUMENTATION</div>
+        </div>
+      </a>
+
+      <nav class="landing-links" aria-label="Documentation Navigation">
+        <a href="./">Home</a>
+        <a href="#url-protocol">URL &amp; AI Spec</a>
+        <a href="#db-script">DB-Script</a>
+        <a href="#examples-lib">12 Examples</a>
+        <a href="./studio.html">WYSIWYG Studio</a>
+      </nav>
+
+      <div class="landing-nav-actions">
+        <a href="./studio.html" class="btn btn-sm btn-purple">🧩 Card Creator</a>
+        <a href="./" class="btn btn-sm btn-lime">Open App →</a>
+      </div>
+    </header>
+
+    <section class="landing-section" style="padding-top:34px;">
+      <div class="section-header" style="margin-bottom:24px;">
+        <div class="section-eyebrow">COMPLETE REFERENCE • CARBON &amp; SILICON READY</div>
+        <h1 class="landing-h1" style="font-size:clamp(2rem, 5vw, 3.2rem); margin:10px 0;">Dangerous.Business Docs</h1>
+        <p class="section-sub">Zero servers. Zero accounts. Everything—your route, expenses, parking pins, and Turing-complete micro-modules—lives inside the URL.</p>
+
+        <div class="docs-toc">
+          <a href="#url-protocol" class="subtle-pill-btn" style="text-decoration:none;">🔗 URL Parameters</a>
+          <a href="#ai-agent" class="subtle-pill-btn" style="text-decoration:none;">🤖 AI Agent Protocol</a>
+          <a href="#db-script" class="subtle-pill-btn" style="text-decoration:none;">🧮 DB-Script Language</a>
+          <a href="#pins-merge" class="subtle-pill-btn" style="text-decoration:none;">🅿️ Pins &amp; Smart Merge</a>
+          <a href="#examples-lib" class="subtle-pill-btn" style="text-decoration:none;">📚 12 Micro-Module Examples</a>
+        </div>
+      </div>
+
+      <!-- THEME BAR -->
+      <div class="card" style="max-width:680px; margin:0 auto 28px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <span style="font-weight:800; font-size:0.9rem;">Preview Docs Theme:</span>
+        <div class="theme-picker-grid" id="docs-theme-grid" style="flex:1; min-width:260px;">
+          <button type="button" class="theme-chip" data-theme="dark">🌙 Dark</button>
+          <button type="button" class="theme-chip" data-theme="light">☀️ Light</button>
+          <button type="button" class="theme-chip" data-theme="unicorn">🦄 Unicorn</button>
+          <button type="button" class="theme-chip" data-theme="win98">💾 98SE</button>
+          <button type="button" class="theme-chip" data-theme="brutalist">🧱 Brutalist</button>
+        </div>
+      </div>
+
+      <!-- 1. URL PROTOCOL -->
+      <section id="url-protocol" style="margin-bottom:36px;">
+        <div class="card">
+          <div class="mod-tag">01 • URL STATE ARCHITECTURE</div>
+          <h2 style="margin:4px 0 10px;">How State Travels in the Link</h2>
+          <p class="muted" style="font-size:0.95rem;">Nothing is ever sent to a Dangerous.Business backend. All state is serialized in the URL hash fragment (which browsers never transmit in HTTP requests to servers).</p>
+          <table class="docs-table">
+            <thead>
+              <tr><th>Hash Parameter</th><th>Format</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>#s=&lt;lz&gt;</code></td>
+                <td>LZ-String URI-compressed JSON</td>
+                <td>Standard instant-open trip link containing route, expenses, playlist, notes, pins, and micro-modules.</td>
+              </tr>
+              <tr>
+                <td><code>#e=&lt;b64url&gt;</code></td>
+                <td>PBKDF2 (100k SHA-256) + AES-256-GCM</td>
+                <td>Password-encrypted trip payload. Unreadable without the crew passphrase.</td>
+              </tr>
+              <tr>
+                <td><code>&amp;ai=&lt;json&gt;</code></td>
+                <td>URL-encoded JSON delta patch</td>
+                <td>Appended to any existing <code>#s=</code> or <code>#e=</code> link by an AI agent (or script) to add expenses, stops, pins, notes, or micro-modules without decompressing the hash.</td>
+              </tr>
+              <tr>
+                <td><code>#ai=&lt;json&gt;</code></td>
+                <td>URL-encoded JSON state</td>
+                <td>Creates a brand-new trip from scratch directly from an AI chat or external tool.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. AI AGENT PROTOCOL -->
+      <section id="ai-agent" style="margin-bottom:36px;">
+        <div class="docs-grid-2">
+          <div class="card">
+            <div class="mod-tag">02 • AI AGENT INTEGRATION</div>
+            <h2 style="margin:4px 0 10px;">Receipt-to-URL Workflow</h2>
+            <p class="muted" style="font-size:0.94rem; line-height:1.55;">
+              Any AI assistant (Gemini, ChatGPT, Claude, Meta AI) can read <a href="./llms.txt" target="_blank" class="creator-link">/llms.txt</a> or <a href="./ai.md" target="_blank" class="creator-link">/ai.md</a>, extract items from a photo of a receipt, and append <code>&amp;ai=...</code> to your group's latest URL.
+            </p>
+            <pre class="code-snippet">https://dangerous.business/#s=N4Ig...&amp;ai=%7B%22addExpenses%22%3A%5B%7B%22description%22%3A%22Gas%20%26%20Snacks%22%2C%22amount%22%3A52.40%2C%22payer%22%3A%22Michael%22%7D%5D%7D</pre>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+              <a href="./llms.txt" target="_blank" class="btn btn-sm btn-lime">Read /llms.txt ↗</a>
+              <a href="./ai.md" target="_blank" class="btn btn-sm btn-purple">Read /ai.md ↗</a>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="mod-tag">03 • SUPPORTED &amp;ai= KEYS</div>
+            <h2 style="margin:4px 0 10px;">Patch JSON Schema</h2>
+            <pre class="code-snippet">{
+  "title": "Optional New Title",
+  "theme": "dark | light | unicorn | win98 | brutalist",
+  "addCrew": ["Andy", "Erin"],
+  "addExpenses": [{"description": "Dinner", "amount": 84.50, "payer": "Michael"}],
+  "addStops": [{"name": "Cooper's Seafood", "lat": 41.415, "lon": -75.653}],
+  "addPins": [{"kind": "parking", "name": "Lot B Spot 14", "note": "Level 2", "lat": 41.409, "lon": -75.662}],
+  "addNotes": [{"author": "Dwight", "text": "Meet at 5:30 PM"}],
+  "addMicroModules": [{"type": "script", "title": "Score", "icon": "🧮", "code": "...", "data": {}}]
+}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. DB-SCRIPT LANGUAGE REFERENCE -->
+      <section id="db-script" style="margin-bottom:36px;">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <div class="mod-tag">04 • UNIVERSAL TURING-COMPLETE MICRO-MODULE LANGUAGE</div>
+              <h2 style="margin:4px 0 6px;">DB-Script Language Reference</h2>
+            </div>
+            <a href="./studio.html" class="btn btn-lime">🧩 Open WYSIWYG Card Creator →</a>
+          </div>
+          <p class="muted" style="font-size:0.94rem;">
+            Every micro-module's UI structure and interactive logic is defined in <strong>DB-Script</strong> (<code>mm.code</code>) with its persistent JSON state (<code>mm.data</code>) stored right in the URL. The sandboxed VM enforces a <strong>25,000-step</strong> execution guard to prevent infinite loops.
+          </p>
+
+          <div class="docs-grid-2" style="margin-top:14px;">
+            <div>
+              <h3>Core Language &amp; Control Flow</h3>
+              <table class="docs-table">
+                <tbody>
+                  <tr><td><code>state k = expr</code></td><td>Initializes <code>state.k</code> in the URL if undefined.</td></tr>
+                  <tr><td><code>let x = expr</code></td><td>Declares a local variable for the current render/block.</td></tr>
+                  <tr><td><code>set state.k = expr</code></td><td>Mutates persistent URL state (supports <code>.prop</code> and <code>[idx]</code>).</td></tr>
+                  <tr><td><code>if / elif / else / end</code></td><td>Conditional branching (also supports single-line <code>if ... then ... end</code>).</td></tr>
+                  <tr><td><code>while cond ... end</code></td><td>Turing-complete looping (also <code>while cond do ... end</code>).</td></tr>
+                  <tr><td><code>for item, i in arr ... end</code></td><td>Iterates arrays (`crew`, `state.items`, etc.) with index `i`.</td></tr>
+                  <tr><td><code>fn name(a, b) ... return v ... end</code></td><td>User-defined functions with recursion support.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <h3>Built-in UI Primitives &amp; Helpers</h3>
+              <table class="docs-table">
+                <tbody>
+                  <tr><td><code>countdown expr</code></td><td>Rich calendar diff (<code>43y 8mo 5d 12h ago</code> or <code>1mo 8d 11h</code>).</td></tr>
+                  <tr><td><code>big expr sub=e badge=e</code></td><td>Large centered hero readout with optional badge &amp; subtitle.</td></tr>
+                  <tr><td><code>kv key, val copy=true</code></td><td>Key-value row with optional 1-tap Copy button.</td></tr>
+                  <tr><td><code>check label, bool -&gt; stmt</code></td><td>Interactive toggleable checkbox row.</td></tr>
+                  <tr><td><code>btn label right=e active=b -&gt; stmt</code></td><td>Action or poll button that executes <code>stmt</code> on tap.</td></tr>
+                  <tr><td><code>input stateKey, ph btn=lbl -&gt; stmt</code></td><td>Text input + submit button bound to <code>state[stateKey]</code>.</td></tr>
+                  <tr><td><code>pin label, lat, lon note=e</code></td><td>GPS pin card with live distance, bearing &amp; Walk Directions.</td></tr>
+                  <tr><td><code>progress pct</code> / <code>row ... end</code></td><td>Progress bar (0–100%) and horizontal flex row layout.</td></tr>
+                  <tr><td><strong>Helpers:</strong></td><td><code>timeDiff()</code>, <code>len()</code>, <code>push()</code>, <code>removeAt()</code>, <code>toggleIn()</code>, <code>pushPairs()</code>, <code>dropPin()</code>, <code>distMi()</code>, <code>compass()</code>, <code>round()</code>, <code>maxIn()</code>, <code>sum()</code>, <code>join()</code>, <code>includes()</code>, <code>now()</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. PINS, SMART MERGE & BACKUPS -->
+      <section id="pins-merge" style="margin-bottom:36px;">
+        <div class="docs-grid-2">
+          <div class="card">
+            <div class="mod-tag">05 • PARKING &amp; MEETUP PINS</div>
+            <h2 style="margin:4px 0 10px;">Never Lose Your Car or Crew</h2>
+            <p class="muted" style="font-size:0.94rem; line-height:1.55;">
+              Tap <strong>Drop Pin</strong> on Overview or Locations to drop a <strong>🅿️ Parking Spot</strong> or <strong>🤝 Meeting Place</strong> pin using your exact GPS or place search. Everyone in the crew sees the distance, compass bearing, estimated walk time, and 1-tap Google Maps / Apple Maps walking directions.
+            </p>
+          </div>
+          <div class="card">
+            <div class="mod-tag">06 • SMART MERGE &amp; 12-SLOT BACKUP VAULT</div>
+            <h2 style="margin:4px 0 10px;">Zero Accidental Data Loss</h2>
+            <p class="muted" style="font-size:0.94rem; line-height:1.55;">
+              Opening an updated link pops up a collapsible item-by-item diff (<code>ONLY ON YOUR DEVICE</code>, <code>+ NEW IN LINK</code>, <code>MODIFIED</code>, <code>IN BOTH</code>) and automatically saves a timestamped snapshot in <strong>⚙ Settings → Saved System Backups</strong> before merging or restoring.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. 12-EXAMPLE LIBRARY -->
+      <section id="examples-lib" style="margin-bottom:36px;">
+        <div class="section-header" style="margin-bottom:22px;">
+          <div class="section-eyebrow">MICRO-MODULE LIBRARY • 12 READY-TO-USE EXAMPLES</div>
+          <h2 class="section-title">A Full Dozen Micro-Modules</h2>
+          <p class="section-sub">Click any example below to open it in the <strong>WYSIWYG Micro-Module Studio</strong>, test it live, customize it, or inject it straight into your trip URL.</p>
+        </div>
+        <div class="docs-grid-3" id="docs-examples-grid"></div>
+      </section>
+    </section>
+
+    <footer class="landing-footer">
+      <div><strong>Dangerous.Business</strong> — <a href="./" class="creator-link">Home</a> · <a href="./studio.html" class="creator-link">WYSIWYG Studio</a> · <a href="./llms.txt" target="_blank" class="creator-link">/llms.txt</a></div>
+      <div style="margin-top:8px;">Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a></div>
+    </footer>
+  </div>
+
+  <script src="./db-script.js?v=12"></script>
+  <script>
+    (() => {
+      const savedTheme = localStorage.getItem('db_theme') || 'dark';
+      function applyDocsTheme(th) {
+        if (th === 'dark') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', th);
+        try { localStorage.setItem('db_theme', th); } catch {}
+        document.querySelectorAll('#docs-theme-grid .theme-chip').forEach((b) => {
+          b.classList.toggle('active', b.dataset.theme === th);
+        });
+      }
+      applyDocsTheme(savedTheme);
+      document.querySelectorAll('#docs-theme-grid .theme-chip').forEach((b) => {
+        b.addEventListener('click', () => applyDocsTheme(b.dataset.theme));
+      });
+
+      const grid = document.getElementById('docs-examples-grid');
+      if (grid && window.DBScript?.EXAMPLES) {
+        window.DBScript.EXAMPLES.forEach((ex) => {
+          const card = document.createElement('div');
+          card.className = 'card example-lib-card';
+          card.innerHTML = `
+            <div>
+              <div class="mod-tag">${window.DBScript.esc(ex.category.toUpperCase())}</div>
+              <h3 style="margin:4px 0 6px; font-size:1.12rem;">${window.DBScript.esc(ex.icon)} ${window.DBScript.esc(ex.title)}</h3>
+              <p class="muted" style="font-size:0.86rem;">${window.DBScript.esc(ex.summary)}</p>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+              <a href="./studio.html?example=${encodeURIComponent(ex.id)}" class="btn btn-sm btn-lime btn-full">Open in Studio →</a>
+            </div>`;
+          grid.appendChild(card);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
