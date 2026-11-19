@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'roadtrip-shell-v12';
+const CACHE_NAME = 'roadtrip-shell-v13';
 const SHELL_URLS = [
   './',
   './index.html',
@@ -50,6 +50,6 @@ self.addEventListener('fetch', (event) => {
         }
         return res;
       })
-      .catch(() => caches.match(req))
+      .catch(() => caches.match(req, { ignoreSearch: true }))
   );
 });

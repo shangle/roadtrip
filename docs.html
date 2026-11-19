@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="./icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=12">
+  <link rel="stylesheet" href="./styles.css?v=13">
   <style>
     .docs-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
     .docs-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -176,7 +176,7 @@
                   <tr><td><code>set state.k = expr</code></td><td>Mutates persistent URL state (supports <code>.prop</code> and <code>[idx]</code>).</td></tr>
                   <tr><td><code>if / elif / else / end</code></td><td>Conditional branching (also supports single-line <code>if ... then ... end</code>).</td></tr>
                   <tr><td><code>while cond ... end</code></td><td>Turing-complete looping (also <code>while cond do ... end</code>).</td></tr>
-                  <tr><td><code>for item, i in arr ... end</code></td><td>Iterates arrays (`crew`, `state.items`, etc.) with index `i`.</td></tr>
+                  <tr><td><code>for item, i in arr ... end</code></td><td>Iterates arrays (<code>crew</code>, <code>state.items</code>, etc.) with index <code>i</code>.</td></tr>
                   <tr><td><code>fn name(a, b) ... return v ... end</code></td><td>User-defined functions with recursion support.</td></tr>
                 </tbody>
               </table>
@@ -240,7 +240,7 @@
     </footer>
   </div>
 
-  <script src="./db-script.js?v=12"></script>
+  <script src="./db-script.js?v=13"></script>
   <script>
     (() => {
       const savedTheme = localStorage.getItem('db_theme') || 'dark';

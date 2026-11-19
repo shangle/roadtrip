@@ -71,11 +71,10 @@
 
   function avatarClassFor(name) {
     const key = String(name || '').trim().toLowerCase();
-    if (key === 'michael') return 'avatar-tim';
-    if (key === 'dwight') return 'avatar-chris';
-    if (key === 'jim') return 'avatar-jessica';
-    if (key === 'pam') return 'avatar-nancy';
-    return '';
+    if (!key) return 'avatar-0';
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    return `avatar-${h % 6}`;
   }
 
   function formatDuration(sec) {
@@ -402,7 +401,10 @@
     const pinMap = new Map();
     for (const p of [...(a.pins || []), ...(b.pins || [])]) {
       if (!p || !p.id || delPins.has(p.id)) continue;
-      pinMap.set(p.id, p);
+      const prev = pinMap.get(p.id);
+      const pTime = p.updatedAt || (p.createdAt ? Date.parse(p.createdAt) : 0) || 0;
+      const prevTime = prev ? (prev.updatedAt || (prev.createdAt ? Date.parse(prev.createdAt) : 0) || 0) : -1;
+      if (!prev || pTime >= prevTime) pinMap.set(p.id, p);
     }
 
     // Merge microModules
@@ -410,7 +412,10 @@
     const mmMap = new Map();
     for (const mm of [...(a.microModules || []), ...(b.microModules || [])]) {
       if (!mm || !mm.id || delMm.has(mm.id)) continue;
-      mmMap.set(mm.id, mm);
+      const prev = mmMap.get(mm.id);
+      if (!prev || (mm.updatedAt || 0) >= (prev.updatedAt || 0)) {
+        mmMap.set(mm.id, mm);
+      }
     }
 
     // Pick fresher GPS location
@@ -652,7 +657,7 @@
       } else if (!l && r) {
         expOnlyInc++;
         expRowsHtml.push(`<div class="diff-item"><div><strong>${esc(r.description)}</strong><div class="muted">${esc(whoStr)} · ${amtStr}</div></div><span class="diff-tag incoming">+ New in Link</span></div>`);
-      } else if (l.amount !== r.amount || l.description !== r.description || l.payer !== r.payer) {
+      } else if (l.amount !== r.amount || l.description !== r.description || l.payer !== r.payer || l.payee !== r.payee) {
         expModified++;
         expRowsHtml.push(`<div class="diff-item"><div><strong>${esc(r.description)}</strong><div class="muted">Device: $${Number(l.amount).toFixed(2)} → Link: $${Number(r.amount).toFixed(2)}</div></div><span class="diff-tag modified">Modified</span></div>`);
       } else {
@@ -738,6 +743,11 @@
       } else if (!l && r) {
         stopDiffCount++;
         stopRowsHtml.push(`<div class="diff-item"><div><strong>${badgeIco} ${esc(p.name)}</strong><div class="muted">${esc(p.note || 'Pin')}</div></div><span class="diff-tag incoming">+ New in Link</span></div>`);
+      } else if (l.name !== r.name || l.note !== r.note || l.kind !== r.kind || l.lat !== r.lat || l.lon !== r.lon) {
+        stopDiffCount++;
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>${badgeIco} ${esc(p.name)}</strong><div class="muted">${esc(p.note || 'Pin updated')}</div></div><span class="diff-tag modified">Modified</span></div>`);
+      } else {
+        stopRowsHtml.push(`<div class="diff-item"><div><strong>${badgeIco} ${esc(p.name)}</strong><div class="muted">${esc(p.note || 'Pin')}</div></div><span class="diff-tag shared">In Both</span></div>`);
       }
     });
 
@@ -746,6 +756,7 @@
     const allMmIds = new Set([...locMmMap.keys(), ...incMmMap.keys()]);
     let mmDiffCount = 0;
     const mmRowsHtml = [];
+    const mmSig = (m) => JSON.stringify({ title: m.title, code: m.code, data: m.data, items: m.items, pairs: m.pairs, options: m.options });
     allMmIds.forEach((id) => {
       const l = locMmMap.get(id);
       const r = incMmMap.get(id);
@@ -756,6 +767,9 @@
       } else if (!l && r) {
         mmDiffCount++;
         mmRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.icon || '🧩')} ${esc(m.title)}</strong></div><span class="diff-tag incoming">+ New in Link</span></div>`);
+      } else if (mmSig(l) !== mmSig(r)) {
+        mmDiffCount++;
+        mmRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.icon || '🧩')} ${esc(m.title)}</strong></div><span class="diff-tag modified">Modified</span></div>`);
       } else {
         mmRowsHtml.push(`<div class="diff-item"><div><strong>${esc(m.icon || '🧩')} ${esc(m.title)}</strong></div><span class="diff-tag shared">In Both</span></div>`);
       }
@@ -987,8 +1001,12 @@
       });
     }
 
-    if (Array.isArray(aiPatch.addMicroModules)) {
-      aiPatch.addMicroModules.forEach((mm) => {
+    const incomingMms = [
+      ...(Array.isArray(aiPatch.addMicroModules) ? aiPatch.addMicroModules : []),
+      ...(aiPatch.addMicroModule && typeof aiPatch.addMicroModule === 'object' ? [aiPatch.addMicroModule] : []),
+    ];
+    if (incomingMms.length) {
+      incomingMms.forEach((mm) => {
         if (!mm || !mm.title) return;
         const id = mm.id || 'mm_ai_' + deterministicHashNum(mm.title + (mm.type || '') + (mm.code || ''));
         if (!st.microModules.some((x) => x.id === id)) {
@@ -1003,6 +1021,7 @@
             targetTime: mm.targetTime || null,
             code: mm.code ? String(mm.code) : undefined,
             data: mm.data && typeof mm.data === 'object' ? mm.data : undefined,
+            updatedAt: Date.now(),
           });
         }
       });
@@ -1048,10 +1067,24 @@
       aiRawParam = rawHash.slice(ampAiIdx + 4);
     }
 
-    // Case 1: Pure #ai=<JSON> URL constructed from scratch by an AI Agent
+    // Case 1: Pure #ai=<JSON> URL constructed from scratch by an AI Agent or Studio
+    const targetActive = urlSearchParams.get('target') === 'active';
     if (mainPart.startsWith('ai=')) {
       const aiObj = parseAiJsonString(mainPart.slice(3));
       if (aiObj) {
+        if (targetActive) {
+          try {
+            const saved = JSON.parse(localStorage.getItem(LAST_TRIP_STORAGE_KEY) || 'null');
+            if (saved && saved.id) {
+              if (!loadLocalByTripId(saved.id)) saveStateToLocal(saved);
+              const patched = applyAiPatchToState(saved, aiObj);
+              const cachedPw = sessionStorage.getItem(`db_pw_${saved.id}`) || null;
+              window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+              enterAppWithState(patched, cachedPw, false);
+              return;
+            }
+          } catch {}
+        }
         const built = applyAiPatchToState({ id: aiObj.id || 'trip_ai_' + deterministicHashNum(JSON.stringify(aiObj)), title: aiObj.title || 'AI Coordinated Trip', crew: aiObj.crew || ['Michael', 'Dwight', 'Jim', 'Pam'] }, aiObj);
         localStorage.setItem(`db_welcomed_${built.id}`, '1');
         enterAppWithState(built, null, false);
@@ -1385,6 +1418,12 @@
       if (route) {
         appState.location.remainingMeters = Math.round(route.distance);
         appState.location.remainingSec = Math.round(route.duration);
+        appState.location.initialTotalMeters = Math.max(appState.location.initialTotalMeters || 0, Math.round(route.distance));
+        if (appState.location.initialTotalMeters > 0) {
+          appState.location.progressPct = route.distance < 150
+            ? 100
+            : Math.min(98, Math.max(5, Math.round((1 - route.distance / appState.location.initialTotalMeters) * 100)));
+        }
         cachedRouteGeometry = route.geometry?.coordinates || [];
         if (activeStops.length > 0 && route.legs?.[0]) {
           appState.location.nextStop = {
@@ -1487,7 +1526,10 @@
     document.querySelectorAll('.nav-item').forEach((b) => b.classList.toggle('active', b.dataset.tab === tabName));
     document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === `tab-${tabName}`));
     if (tabName === 'stops' && map) {
-      setTimeout(() => map.invalidateSize(), 60);
+      setTimeout(() => {
+        map.invalidateSize();
+        fitMapToTrip();
+      }, 60);
     }
   }
 
@@ -1551,10 +1593,11 @@
       btn.innerHTML = `<div class="avatar-circle ${avatarClassFor(person)}" style="width:36px;height:36px;font-size:0.92rem;">${esc(person.charAt(0).toUpperCase())}</div><span>${esc(person)}</span>`;
       btn.addEventListener('click', () => {
         currentUser = person;
-        localStorage.setItem('roadtrip_who', person);
+        try { localStorage.setItem('roadtrip_who_v4', person); } catch {}
         renderWhoAndHeader();
         renderExpensesModule();
         renderMessages();
+        renderMicroModules();
         closeAllSheets();
       });
       grid.appendChild(btn);
@@ -2048,7 +2091,7 @@
     if (map) return;
     const mapEl = document.getElementById('map');
     if (!mapEl) return;
-    map = L.map('map', { zoomControl: false }).setView([43.156, -85.710], 6);
+    map = L.map('map', { zoomControl: false }).setView([41.40897, -75.66241], 10);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
       attribution: 'Tiles &copy; Esri',
@@ -2056,6 +2099,26 @@
     stopMarkersLayer = L.layerGroup().addTo(map);
     pinMarkersLayer = L.layerGroup().addTo(map);
     routeLayer = L.polyline([], { color: '#9D7BFF', weight: 4, opacity: 0.85 }).addTo(map);
+  }
+
+  function fitMapToTrip() {
+    if (!map || !appState) return;
+    const pts = [];
+    const loc = appState.location;
+    if (loc?.lat != null && loc?.lon != null) pts.push([Number(loc.lat), Number(loc.lon)]);
+    const dest = appState.trip?.destination;
+    if (dest?.lat != null && dest?.lon != null) pts.push([Number(dest.lat), Number(dest.lon)]);
+    (appState.trip?.stops || []).forEach((s) => {
+      if (s?.lat != null && s?.lon != null) pts.push([Number(s.lat), Number(s.lon)]);
+    });
+    (appState.pins || []).forEach((p) => {
+      if (p?.lat != null && p?.lon != null) pts.push([Number(p.lat), Number(p.lon)]);
+    });
+    if (pts.length >= 2) {
+      map.fitBounds(L.latLngBounds(pts), { padding: [34, 34], maxZoom: 14 });
+    } else if (pts.length === 1) {
+      map.setView(pts[0], 13);
+    }
   }
 
   function updateMap() {
@@ -2344,9 +2407,23 @@
     const mmList = document.getElementById('settings-micromodules-list');
     if (mmList) {
       const mms = appState.microModules || [];
-      mmList.innerHTML = mms.length
-        ? mms.map((m) => `<div class="backup-item"><span style="font-weight:800; font-size:0.86rem;">${esc(m.icon || '🧩')} ${esc(m.title)}</span><span class="muted">${esc(m.type)}</span></div>`).join('')
-        : `<div class="muted" style="font-size:0.8rem;">No micro-modules yet. Tap "+ Add Micro-Module" above.</div>`;
+      mmList.innerHTML = '';
+      if (!mms.length) {
+        mmList.innerHTML = `<div class="muted" style="font-size:0.8rem;">No micro-modules yet. Tap "+ Quick Add" or "WYSIWYG Studio" above.</div>`;
+      } else {
+        mms.forEach((m) => {
+          const row = document.createElement('div');
+          row.className = 'backup-item';
+          row.innerHTML = `
+            <span style="font-weight:800; font-size:0.86rem; min-width:0; overflow:hidden; text-overflow:ellipsis;">${esc(m.icon || '🧩')} ${esc(m.title)}</span>
+            <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+              <span class="muted">${esc(m.type)}</span>
+              <button type="button" class="subtle-pill-btn edit-settings-mm-btn" style="padding:3px 9px; font-size:0.72rem;">Edit</button>
+            </div>`;
+          row.querySelector('.edit-settings-mm-btn').addEventListener('click', () => openMicroModuleStudio(m));
+          mmList.appendChild(row);
+        });
+      }
     }
 
     // Multi-Backup History List
@@ -2663,7 +2740,7 @@
       if (editId) {
         appState.microModules = appState.microModules.map((m) =>
           m.id === editId
-            ? { ...m, type, icon, title, code, data: parsedData, targetTime: type === 'countdown' ? targetTime : m.targetTime }
+            ? { ...m, type, icon, title, code, data: parsedData, targetTime: type === 'countdown' ? targetTime : m.targetTime, updatedAt: Date.now() }
             : m
         );
       } else {
@@ -2678,6 +2755,7 @@
           pairs: Array.isArray(parsedData.pairs) ? parsedData.pairs : [],
           options: Array.isArray(parsedData.options) ? parsedData.options : [],
           targetTime: type === 'countdown' ? targetTime : null,
+          updatedAt: Date.now(),
         };
         appState.microModules.push(mm);
       }
@@ -2826,7 +2904,7 @@
       openSheet('sheet-modules');
     });
 
-    document.getElementById('who-add-btn')?.addEventListener('click', async () => {
+    const addCrewMember = async () => {
       const inp = document.getElementById('who-add-input');
       const name = inp.value.trim();
       if (name && appState && !appState.crew.includes(name)) {
@@ -2835,6 +2913,10 @@
         renderAll();
         await syncStateToUrl(`Added ${name} to crew`);
       }
+    };
+    document.getElementById('who-add-btn')?.addEventListener('click', addCrewMember);
+    document.getElementById('who-add-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addCrewMember(); }
     });
 
     // Quick Action Buttons & Drop Pin Sheet
@@ -2950,11 +3032,14 @@
       const description = type === 'payment' ? `Repayment: ${payer} → ${payee}` : (rawDesc || 'Trip Expense');
 
       if (!Number.isFinite(amount) || amount <= 0) return;
+      if (type === 'payment' && payer === payee) {
+        showToast('Pick two different people for a payback');
+        return;
+      }
 
       if (editId) {
-        const numId = Number(editId);
         appState.expenses.transactions = appState.expenses.transactions.map((t) =>
-          t.id === numId ? { ...t, type, description, amount, payer, payee: type === 'payment' ? payee : undefined, updatedAt: Date.now() } : t
+          String(t.id) === String(editId) ? { ...t, type, description, amount, payer, payee: type === 'payment' ? payee : undefined, updatedAt: Date.now() } : t
         );
       } else {
         appState.expenses.transactions.push({
@@ -3006,11 +3091,17 @@
       });
     };
     document.getElementById('sheet-stop-btn')?.addEventListener('click', () => runStopSearch(document.getElementById('sheet-stop-input').value, false, 'sheet-stop-results'));
+    document.getElementById('sheet-stop-input')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runStopSearch(e.target.value, false, 'sheet-stop-results');
+      }
+    });
     document.querySelectorAll('.sheet-pit-chip').forEach((c) => c.addEventListener('click', () => runStopSearch(c.dataset.q, true, 'sheet-stop-results')));
     document.querySelectorAll('.quick-stop-chip').forEach((c) => c.addEventListener('click', () => runStopSearch(c.dataset.q, true, 'stops-tab-results')));
 
     document.getElementById('center-map-btn')?.addEventListener('click', () => {
-      if (map && appState?.location?.lat != null) map.setView([appState.location.lat, appState.location.lon], 10);
+      fitMapToTrip();
     });
 
     // Playlist Editor Sheet
@@ -3048,6 +3139,7 @@
       } else {
         activePassword = null;
         appState.encrypted = false;
+        try { sessionStorage.removeItem(`db_pw_${appState.id}`); } catch {}
         await syncStateToUrl('Switched to standard unencrypted URL');
       }
       renderWhoAndHeader();
@@ -3091,7 +3183,19 @@
       addNote(v);
     });
     document.querySelectorAll('.sheet-quick-msg').forEach((c) => {
-      c.addEventListener('click', () => { closeAllSheets(); addNote(c.textContent); });
+      c.addEventListener('click', () => {
+        const txt = c.textContent.trim();
+        if (txt.endsWith(':')) {
+          const inp = document.getElementById('sheet-msg-input');
+          if (inp) {
+            inp.value = txt + ' ';
+            inp.focus();
+          }
+        } else {
+          closeAllSheets();
+          addNote(txt);
+        }
+      });
     });
 
     // Install PWA
@@ -3103,10 +3207,16 @@
     });
     window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; updateInstallUI(); });
 
-    // Close sheets
+    // Close sheets & modals on click or Escape
     document.querySelectorAll('.close-sheet-btn').forEach((b) => b.addEventListener('click', closeAllSheets));
     document.querySelectorAll('.sheet-backdrop').forEach((bd) => {
       bd.addEventListener('click', (e) => { if (e.target === bd) closeAllSheets(); });
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      closeAllSheets();
+      document.getElementById('wizard-modal')?.classList.add('hidden');
+      document.getElementById('restore-confirm-modal')?.classList.add('hidden');
     });
   }
 
@@ -3120,7 +3230,10 @@
     setInterval(() => {
       if (appState) {
         if (appState.modules?.locations) renderHero();
-        renderMicroModules();
+        const mmBox = document.getElementById('home-micromodules-box');
+        if (!mmBox || !mmBox.contains(document.activeElement)) {
+          renderMicroModules();
+        }
       }
     }, 30000);
   }

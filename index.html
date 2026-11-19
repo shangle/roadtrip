@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <link rel="stylesheet" href="./styles.css?v=12">
+  <link rel="stylesheet" href="./styles.css?v=13">
 </head>
 <body>
   <div class="ambient-glow"></div>
@@ -61,6 +61,7 @@
       </div>
     </header>
 
+    <main>
     <!-- HERO -->
     <section class="landing-hero">
       <div class="hero-copy-col">
@@ -280,10 +281,10 @@
         <div class="mod-card">
           <div class="mod-tag">02 • TURING-COMPLETE DB-SCRIPT &amp; URL MICRO-MODULES</div>
           <h3>Programmable Micro-Modules in the Link</h3>
-          <p>Every micro-module is powered by <strong>DB-Script</strong>—a sandboxed, Turing-complete mini-language (`state`, `let`, `set`, `if/else`, `while`, `for`, `fn`, plus UI primitives `big`, `countdown`, `kv`, `check`, `btn`, `input`, `pin`, `progress`) whose entire structure &amp; state travel inside the URL:</p>
+          <p>Every micro-module is powered by <strong>DB-Script</strong>—a sandboxed, Turing-complete mini-language (<code>state</code>, <code>let</code>, <code>set</code>, <code>if/else</code>, <code>while</code>, <code>for</code>, <code>fn</code>, plus UI primitives <code>big</code>, <code>countdown</code>, <code>kv</code>, <code>check</code>, <code>btn</code>, <code>input</code>, <code>pin</code>, <code>progress</code>) whose entire structure &amp; state travel inside the URL:</p>
           <ul class="docs-list">
-            <li><strong>⏳ Countdown &amp; Past Elapsed (`countdown`):</strong> Years, months, days, hours &amp; minutes for both future countdowns and past milestones.</li>
-            <li><strong>🔑 Pinned Codes (`kv`) &amp; 🅿️ GPS Pins (`pin`):</strong> Wi-Fi/door codes with 1-tap copy, plus dropped parking &amp; meetup pins with walking directions.</li>
+            <li><strong>⏳ Countdown &amp; Past Elapsed (<code>countdown</code>):</strong> Years, months, days, hours &amp; minutes for both future countdowns and past milestones.</li>
+            <li><strong>🔑 Pinned Codes (<code>kv</code>) &amp; 🅿️ GPS Pins (<code>pin</code>):</strong> Wi-Fi/door codes with 1-tap copy, plus dropped parking &amp; meetup pins with walking directions.</li>
             <li><strong>📦 Checklists, 🍕 Polls &amp; 🧮 Custom Scripts:</strong> Tap <code>&lt;/&gt; Script</code> on any micro-module to view or edit its live DB-Script code!</li>
           </ul>
           <pre class="code-snippet">state target = "2026-12-25T11:11"
@@ -319,11 +320,12 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
         <button id="footer-demo-btn" class="btn btn-xl" type="button">⚡ Load Demo Trip</button>
       </div>
     </section>
+    </main>
 
     <footer class="landing-footer">
       <div><strong>Dangerous.Business</strong> — 100% Client-Side • URL-Driven • Web Crypto AES-256-GCM</div>
       <div style="margin-top:8px;">
-        <a href="./docs.html">Documentation</a> • <a href="./studio.html">WYSIWYG Card Creator</a> • Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a>
+        <a href="./docs.html" class="creator-link">Documentation</a> • <a href="./studio.html" class="creator-link">WYSIWYG Card Creator</a> • Created by <a href="https://shangle.me" target="_blank" rel="noopener" class="creator-link">shangle.me ↗</a>
       </div>
     </footer>
   </div>
@@ -357,7 +359,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
           <button type="button" class="subtle-pill-btn wiz-title-preset" data-title="Spring Break Crew">🌴 Spring Break</button>
         </div>
 
-        <label class="field-label" style="margin-top:18px;">Who’s in the Crew?</label>
+        <label class="field-label" for="wiz-person-input" style="margin-top:18px;">Who’s in the Crew?</label>
         <p class="muted" style="margin:0 0 8px;">Add everyone riding or splitting costs together.</p>
         <div class="input-row">
           <input id="wiz-person-input" class="input" type="text" placeholder="Type a name (e.g. Kevin, Kelly)..." maxlength="24">
@@ -412,7 +414,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
       <div class="wiz-step hidden" id="wiz-step-3">
         <!-- Locations Config -->
         <div id="wiz-cfg-locations" class="wiz-cfg-block">
-          <label class="field-label">📍 Final Destination <span class="muted">(optional now)</span></label>
+          <label class="field-label" for="wiz-dest-input">📍 Final Destination <span class="muted">(optional now)</span></label>
           <div class="input-row">
             <input id="wiz-dest-input" class="input" type="text" placeholder="Search city or landmark (e.g. Las Vegas, NV)...">
             <button id="wiz-dest-search-btn" class="btn btn-lime" type="button">Find</button>
@@ -423,9 +425,9 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
 
         <!-- Playlist Config -->
         <div id="wiz-cfg-playlist" class="wiz-cfg-block">
-          <label class="field-label">🎵 Shared Playlist URL <span class="muted">(YouTube Music, Spotify, or Apple Music)</span></label>
+          <label class="field-label" for="wiz-playlist-url">🎵 Shared Playlist URL <span class="muted">(YouTube Music, Spotify, or Apple Music)</span></label>
           <input id="wiz-playlist-url" class="input" type="url" placeholder="https://music.youtube.com/playlist?list=... or Spotify link">
-          <input id="wiz-playlist-title" class="input" style="margin-top:8px;" type="text" placeholder="Playlist Name (e.g. Threat Level Midnight Mix)">
+          <input id="wiz-playlist-title" class="input" style="margin-top:8px;" type="text" aria-label="Playlist Name" placeholder="Playlist Name (e.g. Threat Level Midnight Mix)">
           <div style="margin-top:6px;">
             <button id="wiz-sample-playlist-btn" class="subtle-pill-btn" type="button">Use Sample Roadtrip Playlist</button>
           </div>
@@ -433,7 +435,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
 
         <!-- Notes Config -->
         <div id="wiz-cfg-notes" class="wiz-cfg-block">
-          <label class="field-label">💬 Pinned First Note <span class="muted">(optional)</span></label>
+          <label class="field-label" for="wiz-first-note">💬 Pinned First Note <span class="muted">(optional)</span></label>
           <input id="wiz-first-note" class="input" type="text" placeholder="e.g. Airbnb code is #4829 • Meet at 8 AM sharp">
         </div>
 
@@ -491,7 +493,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
       <p class="muted">This Dangerous.Business link is encrypted. Enter the crew password to decrypt it in your browser.</p>
 
       <form id="unlock-form" style="margin-top:16px;">
-        <input id="unlock-password-input" class="input input-lg" style="text-align:center;" type="password" placeholder="Passcode..." required>
+        <input id="unlock-password-input" class="input input-lg" style="text-align:center;" type="password" aria-label="Trip Passcode" autocomplete="current-password" placeholder="Passcode..." required>
         <div id="unlock-error" class="error-banner hidden">Incorrect passcode. Please try again.</div>
         <button class="btn btn-lime btn-full btn-xl" style="margin-top:12px;" type="submit">Unlock Trip →</button>
       </form>
@@ -587,7 +589,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
       <!-- App Top Header -->
       <header class="topbar">
         <button id="who-picker-btn" class="who-btn" type="button">
-          <div class="avatar-circle avatar-tim" id="who-avatar">M</div>
+          <div class="avatar-circle avatar-0" id="who-avatar">M</div>
           <div>
             <div class="who-kicker">
               <span id="header-trip-name">Party at Dunder Mifflin</span>
@@ -617,8 +619,9 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
         </button>
       </section>
 
+      <main id="app-main">
       <!-- TAB 1: HOME OVERVIEW -->
-      <main id="tab-home" class="tab-panel active">
+      <section id="tab-home" class="tab-panel active">
         <!-- Hero Location & ETA Card (Shown when Locations module is enabled) -->
         <section id="home-locations-card" class="hero-card">
           <div class="hero-top">
@@ -791,10 +794,10 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
         <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
           📤 Share the Update with Crew
         </button>
-      </main>
+      </section>
 
       <!-- TAB 2: STOPS & MAP (Locations Module) -->
-      <main id="tab-stops" class="tab-panel">
+      <section id="tab-stops" class="tab-panel">
         <section class="card">
           <div class="card-head">
             <div class="card-title">Quick Pit Stops</div>
@@ -842,10 +845,10 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
         <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
           📤 Share Route Update
         </button>
-      </main>
+      </section>
 
       <!-- TAB 3: NATIVE EXPENSE SPLITTER (Expenses Module) -->
-      <main id="tab-split" class="tab-panel">
+      <section id="tab-split" class="tab-panel">
         <section class="hero-card" style="margin-bottom:14px;">
           <div class="money-row">
             <div>
@@ -893,10 +896,10 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
         <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
           📤 Share Expense Update
         </button>
-      </main>
+      </section>
 
       <!-- TAB 4: SHARED PLAYLIST & CREW NOTES -->
-      <main id="tab-vibe" class="tab-panel">
+      <section id="tab-vibe" class="tab-panel">
         <!-- Playlist Section -->
         <section id="vibe-playlist-section" class="card">
           <div class="card-head">
@@ -932,7 +935,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
           </div>
 
           <form id="msg-form" class="input-row" style="margin-top:10px;">
-            <input id="msg-input" class="input" type="text" placeholder="Post a note, code, or update..." required>
+            <input id="msg-input" class="input" type="text" aria-label="Post a crew note" placeholder="Post a note, code, or update..." required>
             <button class="btn btn-lime" type="submit">Post</button>
           </form>
         </section>
@@ -940,6 +943,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
         <button class="btn btn-lime btn-full btn-xl share-trigger-btn" type="button">
           📤 Share the Update
         </button>
+      </section>
       </main>
     </div>
 
@@ -1030,7 +1034,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
 
         <div style="margin-top:12px;">
           <label class="field-label" for="share-url-readonly" style="font-size:0.74rem;">Shareable Trip URL</label>
-          <input id="share-url-readonly" class="input" style="font-size:0.78rem; color:var(--muted);" type="text" readonly>
+          <input id="share-url-readonly" class="input" style="font-size:0.78rem;" type="text" readonly>
         </div>
       </div>
     </div>
@@ -1134,7 +1138,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
       <div style="margin-bottom:16px; padding-top:12px; border-top:1px solid var(--border);">
         <label class="field-label" for="settings-password-input">URL Password Encryption (AES-256)</label>
         <div class="input-row">
-          <input id="settings-password-input" class="input" type="password" placeholder="Leave blank for unencrypted link">
+          <input id="settings-password-input" class="input" type="password" autocomplete="new-password" placeholder="Leave blank for unencrypted link">
           <button id="settings-save-password-btn" class="btn btn-purple btn-sm" type="button">Apply</button>
         </div>
         <div class="muted" style="margin-top:6px; font-size:0.76rem;" id="settings-enc-status"></div>
@@ -1270,7 +1274,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
           </div>
           <div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--border);">
             <div class="input-row">
-              <input id="pin-search-input" class="input" type="text" placeholder="Or search a landmark / street...">
+              <input id="pin-search-input" class="input" type="text" aria-label="Search landmark or street for pin" placeholder="Or search a landmark / street...">
               <button type="button" class="btn btn-sm" id="pin-search-btn">Find</button>
             </div>
             <div id="pin-search-results" class="search-results hidden"></div>
@@ -1359,7 +1363,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
       </div>
 
       <div style="padding-top:12px; border-top:1px solid var(--border);">
-        <label class="field-label">Add a Pit Stop Along the Way</label>
+        <label class="field-label" for="sheet-stop-input">Add a Pit Stop Along the Way</label>
         <div class="pit-grid">
           <button class="pit-tile sheet-pit-chip" type="button" data-q="cafe"><span>☕</span> Coffee nearby</button>
           <button class="pit-tile sheet-pit-chip" type="button" data-q="gas station"><span>⛽</span> Gas nearby</button>
@@ -1399,7 +1403,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
         <button class="subtle-pill-btn sheet-quick-msg" type="button">📍 Rally point here!</button>
       </div>
       <form id="sheet-msg-form" class="input-row">
-        <input id="sheet-msg-input" class="input" type="text" placeholder="Write a message or code..." required>
+        <input id="sheet-msg-input" class="input" type="text" aria-label="Write a crew message or code" placeholder="Write a message or code..." required>
         <button class="btn btn-lime" type="submit">Post</button>
       </form>
     </div>
@@ -1410,7 +1414,7 @@ big t.text sub=t.formattedDate badge=t.badge</pre>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./db-script.js?v=12"></script>
-  <script src="./app.js?v=12"></script>
+  <script src="./db-script.js?v=13"></script>
+  <script src="./app.js?v=13"></script>
 </body>
 </html>

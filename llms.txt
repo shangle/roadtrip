@@ -5,6 +5,8 @@
 ## Documentation & Key Links
 
 - [Dangerous.Business Web App](https://dangerous.business/): Launch the zero-cloud URL-driven trip coordinator or load the live demo trip.
+- [Full Documentation (docs.html)](https://dangerous.business/docs.html): Human-readable guide covering URL parameters, AI patches, DB-Script reference, and 12 micro-module examples.
+- [WYSIWYG Micro-Module Card Creator (studio.html)](https://dangerous.business/studio.html): Visual card builder & DB-Script playground to design interactive cards and export `&ai=` URLs.
 - [AI Agent URL Protocol & DB-Script Spec](https://dangerous.business/ai.md): Full machine-readable specification for `#s=`, `#e=`, `&ai=`, and Turing-complete `DB-Script` micro-modules.
 - [Creator — shangle.me](https://shangle.me/): Created by shangle.me.
 

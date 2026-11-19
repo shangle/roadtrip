@@ -48,6 +48,16 @@ body {
   overflow-x: hidden;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
 .ambient-glow {
   position: fixed;
   top: -140px;
@@ -887,10 +897,12 @@ body {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.45);
 }
 
-.avatar-tim { background: linear-gradient(135deg, #C8FF3D, #4ADE80); color: #07080D; }
-.avatar-chris { background: linear-gradient(135deg, #56CCF2, #6366F1); color: #07080D; }
-.avatar-jessica { background: linear-gradient(135deg, #FB7185, #FBBF24); color: #07080D; }
-.avatar-nancy { background: linear-gradient(135deg, #B9A6FF, #EC4899); color: #07080D; }
+.avatar-0 { background: linear-gradient(135deg, #C8FF3D, #4ADE80); color: #07080D; }
+.avatar-1 { background: linear-gradient(135deg, #56CCF2, #6366F1); color: #07080D; }
+.avatar-2 { background: linear-gradient(135deg, #FB7185, #FBBF24); color: #07080D; }
+.avatar-3 { background: linear-gradient(135deg, #B9A6FF, #EC4899); color: #07080D; }
+.avatar-4 { background: linear-gradient(135deg, #34D399, #06B6D4); color: #07080D; }
+.avatar-5 { background: linear-gradient(135deg, #F59E0B, #EF4444); color: #FFFFFF; }
 
 .who-kicker {
   font-size: 0.76rem;
@@ -2169,6 +2181,10 @@ html[data-theme="brutalist"] #map .leaflet-tile-pane {
 
 /* URL Micro-Modules & DB-Script Widgets */
 .mm-check-row {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.94rem;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2496,6 +2512,12 @@ html[data-theme="win98"] .landing-h1,
 html[data-theme="win98"] .landing-lead,
 html[data-theme="win98"] .section-title,
 html[data-theme="win98"] .section-sub,
+html[data-theme="win98"] .section-header h1,
+html[data-theme="win98"] .section-header h2,
+html[data-theme="win98"] .section-header p,
+html[data-theme="win98"] .trust-item strong,
+html[data-theme="win98"] .trust-item span,
+html[data-theme="win98"] #landing-theme-picker > .muted,
 html[data-theme="win98"] .landing-footer,
 html[data-theme="win98"] .who-name,
 html[data-theme="win98"] .who-kicker,
@@ -2519,6 +2541,7 @@ html[data-theme="win98"] .card,
 html[data-theme="win98"] .step-card,
 html[data-theme="win98"] .mod-card,
 html[data-theme="win98"] .uc-card,
+html[data-theme="win98"] .landing-bottom-cta,
 html[data-theme="win98"] .sheet,
 html[data-theme="win98"] .wizard-card,
 html[data-theme="win98"] .share-update-bar,
@@ -2537,6 +2560,11 @@ html[data-theme="win98"] .subtle-pill-btn {
   box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #DFDFDF !important;
 }
 
+html[data-theme="win98"] .landing-bottom-cta h2,
+html[data-theme="win98"] .landing-bottom-cta p {
+  color: #000000 !important;
+}
+
 html[data-theme="win98"] .card-head,
 html[data-theme="win98"] .hero-top {
   background: linear-gradient(90deg, #000080, #1084D0);
@@ -2547,7 +2575,7 @@ html[data-theme="win98"] .hero-top {
 
 html[data-theme="win98"] .card-head .link-btn,
 html[data-theme="win98"] .card-title,
-html[data-theme="win98"] .dest-eyebrow {
+html[data-theme="win98"] .hero-top .dest-eyebrow {
   color: #FFFFFF !important;
 }
 

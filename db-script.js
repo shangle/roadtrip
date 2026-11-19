@@ -1,6 +1,8 @@
 (() => {
   'use strict';
 
+  const BLOCKED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
   function esc(str) {
     return String(str ?? '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -400,7 +402,7 @@
         const right = parseUnary();
         if (op === '*') left = Number(left) * Number(right);
         else if (op === '/') left = Number(right) === 0 ? 0 : Number(left) / Number(right);
-        else left = Number(left) % Number(right);
+        else left = Number(right) === 0 ? 0 : Number(left) % Number(right);
       }
       return left;
     }
@@ -418,21 +420,16 @@
         if (peek().val === '.') {
           next();
           const propTok = next();
-          if (propTok) val = val != null ? val[propTok.val] : undefined;
+          if (propTok) {
+            const pk = String(propTok.val);
+            val = !BLOCKED_KEYS.has(pk) && val != null ? val[pk] : undefined;
+          }
         } else if (peek().val === '[') {
           next();
           const idx = parseTernary();
           if (peek()?.val === ']') next();
-          val = val != null ? val[idx] : undefined;
-        } else if (peek().val === '(' && typeof val === 'function') {
-          next();
-          const args = [];
-          while (peek() && peek().val !== ')') {
-            args.push(parseTernary());
-            if (peek()?.val === ',') next();
-          }
-          if (peek()?.val === ')') next();
-          val = val(...args);
+          const ik = String(idx);
+          val = !BLOCKED_KEYS.has(ik) && val != null ? val[idx] : undefined;
         } else {
           break;
         }
@@ -470,7 +467,8 @@
           const kTok = next();
           const k = kTok ? String(kTok.val) : '';
           if (peek()?.val === ':') next();
-          obj[k] = parseTernary();
+          const v = parseTernary();
+          if (k && !BLOCKED_KEYS.has(k)) obj[k] = v;
           if (peek()?.val === ',') next();
         }
         if (peek()?.val === '}') next();
@@ -576,6 +574,7 @@
   function assignDbLhs(lhsStr, val, env, vm) {
     const clean = lhsStr.trim();
     if (!clean.includes('.') && !clean.includes('[')) {
+      if (BLOCKED_KEYS.has(clean)) return;
       if (clean in env.locals) env.locals[clean] = val;
       else env.state[clean] = val;
       return;
@@ -583,6 +582,7 @@
     const tokens = tokenizeDbExpr(clean);
     if (!tokens.length) return;
     let rootName = tokens[0].val;
+    if (BLOCKED_KEYS.has(String(rootName))) return;
     let obj = rootName === 'state' ? env.state : (rootName in env.locals ? env.locals[rootName] : env.state[rootName]);
     let i = 1;
     const path = [];
@@ -608,7 +608,7 @@
         i++;
       }
     }
-    if (!path.length) return;
+    if (!path.length || path.some((k) => BLOCKED_KEYS.has(String(k)))) return;
     for (let k = 0; k < path.length - 1; k++) {
       if (obj == null) return;
       obj = obj[path[k]];
@@ -681,17 +681,80 @@
 
   function extractNamedAttrs(restStr) {
     const attrs = {};
-    let mainExpr = restStr;
-    const attrRegex = /\s+([a-zA-Z_]+)=((?:"[^"]*"|'[^']*'|\([^)]*\)|[^\s])+)/g;
-    let match;
     let firstIdx = -1;
-    while ((match = attrRegex.exec(restStr)) !== null) {
-      if (firstIdx === -1) firstIdx = match.index;
-      attrs[match[1]] = match[2];
+    let depth = 0;
+    let inQuote = null;
+    let i = 0;
+
+    while (i < restStr.length) {
+      const c = restStr[i];
+      if (inQuote) {
+        if (c === '\\') { i += 2; continue; }
+        if (c === inQuote) inQuote = null;
+        i++;
+        continue;
+      }
+      if (c === '"' || c === "'") {
+        inQuote = c;
+        i++;
+        continue;
+      }
+      if (c === '(' || c === '[' || c === '{') {
+        depth++;
+        i++;
+        continue;
+      }
+      if (c === ')' || c === ']' || c === '}') {
+        depth = Math.max(0, depth - 1);
+        i++;
+        continue;
+      }
+      if (depth === 0 && /\s/.test(c)) {
+        const wsStart = i;
+        while (i < restStr.length && /\s/.test(restStr[i])) i++;
+        const attrMatch = restStr.slice(i).match(/^([a-zA-Z_]+)=(?!=)/);
+        if (attrMatch) {
+          if (firstIdx === -1) firstIdx = wsStart;
+          const key = attrMatch[1];
+          i += key.length + 1;
+          const valStart = i;
+          let vd = 0;
+          let vq = null;
+          while (i < restStr.length) {
+            const vc = restStr[i];
+            if (vq) {
+              if (vc === '\\') { i += 2; continue; }
+              if (vc === vq) vq = null;
+              i++;
+              continue;
+            }
+            if (vc === '"' || vc === "'") {
+              vq = vc;
+              i++;
+              continue;
+            }
+            if (vc === '(' || vc === '[' || vc === '{') {
+              vd++;
+              i++;
+              continue;
+            }
+            if (vc === ')' || vc === ']' || vc === '}') {
+              vd = Math.max(0, vd - 1);
+              i++;
+              continue;
+            }
+            if (vd === 0 && /\s/.test(vc)) break;
+            i++;
+          }
+          attrs[key] = restStr.slice(valStart, i);
+          continue;
+        }
+        continue;
+      }
+      i++;
     }
-    if (firstIdx !== -1) {
-      mainExpr = restStr.slice(0, firstIdx).trim();
-    }
+
+    const mainExpr = firstIdx !== -1 ? restStr.slice(0, firstIdx).trim() : restStr;
     return { mainExpr, attrs };
   }
 
@@ -1027,14 +1090,20 @@
         });
         frag.appendChild(el);
       } else if (node.kind === 'check') {
-        const el = document.createElement('div');
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.setAttribute('role', 'checkbox');
+        el.setAttribute('aria-checked', node.done ? 'true' : 'false');
         el.className = `mm-check-row ${node.done ? 'done' : ''}`;
-        el.innerHTML = `<span>${node.done ? '✅' : '⬜'}</span><span>${esc(node.label)}</span>`;
+        el.innerHTML = `<span aria-hidden="true">${node.done ? '✅' : '⬜'}</span><span>${esc(node.label)}</span>`;
         el.addEventListener('click', async () => {
           if (node.actionCode) {
+            vm.steps = 0;
+            vm.halted = false;
             const actLines = expandInlineDbLines(node.actionCode);
             execDbBlock(actLines, { state: mm.data, locals: { ...node.locals } }, vm, []);
             if (Array.isArray(mm.data.items)) mm.items = mm.data.items;
+            mm.updatedAt = Date.now();
             await onChange(`Updated "${mm.title}"`);
           }
         });
@@ -1048,9 +1117,12 @@
           ${node.right ? `<span class="muted" style="font-size:0.8rem;">${esc(node.right)}</span>` : ''}`;
         btn.addEventListener('click', async () => {
           if (node.actionCode) {
+            vm.steps = 0;
+            vm.halted = false;
             const actLines = expandInlineDbLines(node.actionCode);
             execDbBlock(actLines, { state: mm.data, locals: { ...node.locals } }, vm, []);
             if (Array.isArray(mm.data.options)) mm.options = mm.data.options;
+            mm.updatedAt = Date.now();
             await onChange(`Updated "${mm.title}"`);
           }
         });
@@ -1060,17 +1132,20 @@
         row.className = 'input-row';
         row.style.marginTop = '8px';
         row.innerHTML = `
-          <input type="text" class="input" style="padding:9px 12px; font-size:0.9rem;" placeholder="${esc(node.placeholder)}" value="${esc(mm.data[node.stateKey] || '')}">
+          <input type="text" class="input" aria-label="${esc(node.placeholder)}" style="padding:9px 12px; font-size:0.9rem;" placeholder="${esc(node.placeholder)}" value="${esc(mm.data[node.stateKey] || '')}">
           <button type="button" class="btn btn-sm btn-lime">${esc(node.btnLabel)}</button>`;
         const inp = row.querySelector('input');
         const btn = row.querySelector('button');
         const trigger = async () => {
           mm.data[node.stateKey] = inp.value.trim();
           if (node.actionCode) {
+            vm.steps = 0;
+            vm.halted = false;
             const actLines = expandInlineDbLines(node.actionCode);
             execDbBlock(actLines, { state: mm.data, locals: { ...node.locals } }, vm, []);
             if (Array.isArray(mm.data.items)) mm.items = mm.data.items;
             if (Array.isArray(mm.data.pairs)) mm.pairs = mm.data.pairs;
+            mm.updatedAt = Date.now();
             await onChange(`Updated "${mm.title}"`);
           }
         };
@@ -1081,6 +1156,7 @@
         const loc = getLoc() || {};
         const distInfo = loc.lat != null && node.lat != null ? formatPinDistanceReadout(loc.lat, loc.lon, node.lat, node.lon) : '';
         const gmapsWalk = `https://www.google.com/maps/dir/?api=1&destination=${node.lat},${node.lon}&travelmode=walking`;
+        const canRemove = node.index != null && Array.isArray(mm.data.pins);
         const el = document.createElement('div');
         el.className = 'pin-card-row';
         el.innerHTML = `
@@ -1089,8 +1165,18 @@
               <div style="font-weight:800; font-size:0.95rem;">${esc(node.label)}</div>
               <div class="muted" style="font-size:0.78rem;">${esc(node.note)}${distInfo ? ` • <strong style="color:var(--accent-ink);">${esc(distInfo)}</strong>` : ''}</div>
             </div>
-            <a href="${esc(gmapsWalk)}" target="_blank" rel="noopener" class="btn btn-sm btn-lime">🚶 Walk ↗</a>
+            <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
+              <a href="${esc(gmapsWalk)}" target="_blank" rel="noopener" class="btn btn-sm btn-lime">🚶 Walk ↗</a>
+              ${canRemove ? `<button type="button" class="subtle-pill-btn remove-mm-pin-btn" aria-label="Remove pin ${esc(node.label)}" title="Remove Pin">✕</button>` : ''}
+            </div>
           </div>`;
+        if (canRemove) {
+          el.querySelector('.remove-mm-pin-btn')?.addEventListener('click', async () => {
+            mm.data.pins.splice(node.index, 1);
+            mm.updatedAt = Date.now();
+            await onChange(`Removed pin from "${mm.title}"`);
+          });
+        }
         frag.appendChild(el);
       } else if (node.kind === 'progress') {
         const tr = document.createElement('div');

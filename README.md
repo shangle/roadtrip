@@ -7,3 +7,7 @@
 - **Modular Architecture:** Toggle any combination of **Trip Locations & Pit Stops**, **Expense Splitter**, **Shared Music Playlist** (YouTube Music, Spotify, or Apple Music), and **Crew Notes / Board** during setup or anytime mid-trip.
 - **100% URL-Driven + Smart Merge:** Every update is compressed into the URL hash (`#s=...`) and merged by ID in `localStorage` so crew members can share updated links over Signal, iMessage, or WhatsApp without overwriting earlier items.
 - **Optional Web Crypto AES-256-GCM Encryption:** Lock the trip with a passcode (`PBKDF2` + `AES-256-GCM`, `#e=...`) so the URL hash cannot be read without the crew's password.
+- **Parking & Meetup Pins:** Drop exact GPS pins (or search landmarks) for parking spots and rally points with compass bearing, walking time estimates, and 1-tap Google/Apple Maps walking directions.
+- **Turing-Complete DB-Script Micro-Modules & WYSIWYG Studio:** Build programmable checklists, polls, pinned codes, rich countdown/elapsed timers, and custom widgets right inside the URL via [studio.html](https://dangerous.business/studio.html), backed by full docs at [docs.html](https://dangerous.business/docs.html).
+- **5 Instant Themes:** Switch between **Dark**, **Light**, **Unicorn**, **Windows 98 SE**, and **Brutalist** from either the home page or Settings.
+- **AI Agent Native (`&ai=` & `/llms.txt`):** Drop a receipt photo and trip link into an AI assistant to append expenses, stops, pins, notes, or micro-modules directly to the URL hash.
