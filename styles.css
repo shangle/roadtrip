@@ -285,6 +285,8 @@ summary:focus-visible {
 
 /* Hero Device Preview */
 .preview-phone {
+  --muted: #A3B1C6;
+  --lime: #C8FF3D;
   background: linear-gradient(160deg, #181B28 0%, #0E1018 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.15);
   border-radius: 32px;
@@ -2527,8 +2529,8 @@ html[data-theme="win98"] .who-caret {
 
 html[data-theme="win98"] .section-eyebrow,
 html[data-theme="win98"] .landing-footer .creator-link {
-  color: #FFFF00 !important;
-  border-color: #FFFF00 !important;
+  color: #FFFFFF !important;
+  border-color: #FFFFFF !important;
 }
 
 html[data-theme="win98"] .ambient-glow,
